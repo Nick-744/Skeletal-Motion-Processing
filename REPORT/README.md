@@ -45,13 +45,13 @@ xelatex main.tex
 
 or
 
-```
+```bash
 latexmk -xelatex main.tex
 ```
 
-or in "watch mode":
+or in "watch mode"
 
-```
+```bash
 latexmk -xelatex -pvc main.tex
 ```
 
