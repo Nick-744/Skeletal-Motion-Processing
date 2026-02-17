@@ -43,6 +43,18 @@ xelatex main.tex
 xelatex main.tex
 ```
 
+or
+
+```
+latexmk -xelatex main.tex
+```
+
+or in "watch mode":
+
+```
+latexmk -xelatex -pvc main.tex
+```
+
 (or set your editor to use **XeLaTeX** + **Biber**).
 
 ---
