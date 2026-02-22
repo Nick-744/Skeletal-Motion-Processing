@@ -10,7 +10,7 @@ import mediapipe as mp
 
 # ---< Paths >--- #
 current_dir = os.path.dirname(os.path.realpath(__file__))
-model_path  = os.path.join(current_dir, 'hand_landmarker.task')
+model_path  = os.path.join(current_dir, 'ASSETS', 'Google_AI_Edge', 'hand_landmarker.task')
 
 # ---< Shortcuts >--- #
 mp_hands          = mp.tasks.vision.HandLandmarksConnections
@@ -20,7 +20,7 @@ mp_drawing_styles = mp.tasks.vision.drawing_styles
 BaseOptions           = mp.tasks.BaseOptions
 HandLandmarker        = mp.tasks.vision.HandLandmarker
 HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-HandLandmarkerResult  = NewType('HandLandmarkerResult', mp.tasks.vision.HandLandmarkerResult)
+HandLandmarkerResult  = NewType('HandLandmarkerResult', mp.tasks.vision.HandLandmarkerResult) # Just for better type hints!
 VisionRunningMode     = mp.tasks.vision.RunningMode
 
 
@@ -43,6 +43,7 @@ class HandTracker:
         return;
 
     def _on_result(self, result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int) -> None:
+        ''' Internal callback (HandLandmarkerOptions.result_callback). '''
         with self._lock:
             self._latest_result = result
 
@@ -50,6 +51,8 @@ class HandTracker:
 
     @property # Access a method as if it were an attribute...
     def latest_result(self) -> HandLandmarkerResult | None:
+        ''' Get the latest hand landmark detection result.
+            Returns "None" if no result is available yet. '''
         with self._lock:
             return self._latest_result;
 
@@ -87,7 +90,7 @@ class HandTracker:
         return;
 
     # ---< Cleanup resources >--- #
-    def close(self) -> None: self._landmarker.close()
+    def close(self): self._landmarker.close()
     
     def __enter__(self): return self; # Context-manager support
 
