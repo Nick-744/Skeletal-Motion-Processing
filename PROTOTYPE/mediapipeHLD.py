@@ -2,6 +2,7 @@ import os
 import threading
 from time import time
 from typing import NewType
+from collections import deque
 
 import cv2
 import mediapipe as mp
@@ -103,14 +104,33 @@ def run(window_title: str = 'Testing...') -> None:
     cap = cv2.VideoCapture(0)
     if not cap.isOpened(): raise RuntimeError('Could not open webcam.');
 
+    # Moving average FPS calculation
+    frame_times = deque(maxlen = 20)
+    prev_time   = 0 # Initialize time for FPS calculation
+
     with HandTracker(model_path) as tracker:
         while True:
             (success, frame) = cap.read()
             if not success: break;
 
+            # Moving average FPS calculation
+            current_time = time()
+            frame_times.append(current_time - prev_time)
+            prev_time = current_time
+            avg_delta = sum(frame_times) / len(frame_times) # Average the last [x] samples
+            fps       = 1 / avg_delta if avg_delta > 0 else 0
+
             frame = cv2.flip(frame, 1) # Flip the image horizontally / Selfie...
             tracker.detect(frame)
             tracker.draw(frame)
+
+            # Render FPS on frame
+            cv2.putText(
+                frame, f'FPS: {int(fps)}',
+                (15, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1, (0, 255, 0), 2
+            )
 
             cv2.imshow(window_title, frame)
     
