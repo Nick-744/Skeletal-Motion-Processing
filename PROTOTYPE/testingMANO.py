@@ -1,14 +1,15 @@
 import cv2
-import torch
-import smplx
 import trimesh
 import pyrender
-from scipy.spatial.transform import Rotation as R
-from mediapipeHLD import (HandTracker, model_path)
-from visualize3D import (HandData, Hand3D)
+import numpy as np
 
-# **Absolute path** to the MANO model directory...
-MANO_MODEL_PATH = r'C:\Users\nick1\Documents\GitHub\my_thesis\PROTOTYPE\ASSETS'
+from MINIMAL_IK.models import KinematicModel, KinematicPCAWrapper
+from MINIMAL_IK.solver import Solver
+from MINIMAL_IK.armatures import MANOArmature
+from MINIMAL_IK.config import MANO_MODEL_PATH
+
+from mediapipeHLD import (HandTracker, model_path)
+from visualize3D import (HandDataRaw, Hand3D)
 
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
@@ -25,44 +26,39 @@ For more information, please see http://www.intel.com/software/products/support/
 
 
 
-# ---< Compatibility bs fixing >--- #
-import numpy as np
-import inspect
-import sys
-
-np.bool    = bool
-np.int     = int
-np.float   = float
-np.complex = complex
-np.object  = object
-np.unicode = str
-np.str     = str
-
-if not hasattr(inspect, 'getargspec'):
-    inspect.getargspec = inspect.getfullargspec
-
-sys.modules['numpy.int'  ] = int
-sys.modules['numpy.float'] = float
-sys.modules['numpy.bool' ] = bool
-#####################################
-
-
-
 class ManoHandVisualizer:
     def __init__(self, model_path: str):
-        # We use PCA (15 components) to constrain the hand to natural shapes,
-        # which helps smooth out the jitter from MediaPipe.
-        self.num_pca_comps = 15
+        # 1. Initialize MINIMAL_IK Components
+        self.kinematic_model = KinematicModel(model_path, MANOArmature)
         
-        self.mano_model = smplx.create(
-            model_path     = model_path, 
-            model_type     = 'mano', 
-            is_rhand       = True, 
-            use_pca        = True, 
-            num_pca_comps  = self.num_pca_comps, 
-            flat_hand_mean = True
-        )
+        # We use 15 PCA components for pose (plus 3 global rotation, 10 shape)
+        self.wrapper = KinematicPCAWrapper(self.kinematic_model, n_pose=15)
         
+        # Initialize the IK Solver
+        # max_iter is kept relatively low (e.g., 5-10) for real-time performance
+        self.solver = Solver(max_iter=8, verbose=False)
+        
+        # Store previous params to use as the initial guess for the next frame (temporal smoothing)
+        self.current_params = np.zeros(self.wrapper.n_params)
+
+        # 2. Map MediaPipe indices (0-20) to MANOArmature indices
+        # MP order: Wrist, Thumb(4), Index(4), Middle(4), Ring(4), Pinky(4)
+        # MANO order: W, I0-2, M0-2, L0-2(Pinky), R0-2(Ring), T0-2(Thumb), Ext(I3, M3, L3, R3, T3)
+        self.mp_to_mano_idx = [
+            0,             # W (Wrist)
+            5, 6, 7,       # Index (I0, I1, I2)
+            9, 10, 11,     # Middle (M0, M1, M2)
+            17, 18, 19,    # Pinky (L0, L1, L2)
+            13, 14, 15,    # Ring (R0, R1, R2)
+            1, 2, 3,       # Thumb (T0, T1, T2)
+            8,             # Index Tip (I3)
+            12,            # Middle Tip (M3)
+            20,            # Pinky Tip (L3)
+            16,            # Ring Tip (R3)
+            4              # Thumb Tip (T3)
+        ]
+
+        # 3. Setup Pyrender Scene
         self.scene  = pyrender.Scene(bg_color = [0.1, 0.1, 0.1])
         light       = pyrender.DirectionalLight(color = [1.0, 1.0, 1.0], intensity = 3.0)
         self.scene.add(light, pose = np.eye(4))
@@ -74,176 +70,60 @@ class ManoHandVisualizer:
         )
         self.hand_node = None
 
-    def _compute_global_frame(self, 
-        p_start:   np.ndarray, 
-        p_end:     np.ndarray, 
-        up_vector: np.ndarray) -> np.ndarray:
-        '''
-        Constructs a rotation-invariant basis for a bone segment.
-        
-        CRITICAL FIX for "Rotation Dependency":
-        We ensure the basis is strictly defined by the bone vector (Y) 
-        and the palm normal (used to derive Z/X), making it robust 
-        to global hand rotation.
-        
-        Mapping to MANO (Right Hand):
-        - Y-axis: Bone Vector (Start -> End)
-        - X-axis: Flexion Axis (Points RIGHT relative to the bone)
-        - Z-axis: Abduction Axis (Points UP/Out of palm)
-        '''
+        return;
 
-        # 1. Y-Axis: The Bone Vector (Primary Axis)
-        v_y = p_end - p_start
-        norm_y = np.linalg.norm(v_y)
-        if norm_y < 1e-8: return np.eye(3)
-        v_y /= norm_y
-
-        # 2. X-Axis: The Flexion Axis
-        # We use Cross(Up, Y). 
-        # Since 'Up' is the Palm Normal pointing OUT of the hand,
-        # and Y is pointing towards the fingertips, 
-        # Up x Y points to the RIGHT (Thumb side on right hand).
-        # This aligns with MANO's expectation that +X rotation = Flexion.
-        v_x = np.cross(up_vector, v_y)
-        norm_x = np.linalg.norm(v_x)
-        
-        # Robustness check: If bone is perfectly parallel to palm normal (impossible anatomy but possible noise)
-        if norm_x < 1e-8:
-             # Fallback: Pick arbitrary perp vector, re-project later
-            v_x = np.array([1.0, 0.0, 0.0]) if abs(v_y[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
-        
-        v_x /= np.linalg.norm(v_x)
-
-        # 3. Z-Axis: The Abduction Axis (Corrected Up)
-        # We re-calculate Z as X cross Y to ensure a perfect orthonormal basis.
-        # This makes Z point "Out" of the palm, orthogonal to the bone.
-        v_z = np.cross(v_x, v_y)
-        v_z /= np.linalg.norm(v_z)
-
-        # Construct Rotation Matrix [Col_X, Col_Y, Col_Z]
-        rot_matrix = np.stack([v_x, v_y, v_z], axis=-1)
-        
-        return rot_matrix
-
-    def update(self, hands_data: HandData) -> None:
+    def update(self, hands_data: HandDataRaw) -> None:
         if not hands_data: return
 
+        # Extract 3D coordinates from MediaPipe result
         (xs, ys, zs) = hands_data[0]
-        def get_pt(idx): return np.array([xs[idx], ys[idx], zs[idx]])
-        
-        # 45 values: 15 joints * 3 axis-angle values
-        full_pose_flat = np.zeros(45)
+        mp_kpts = np.vstack((xs, ys, zs)).T  # Shape: (21, 3)
 
-        # --- STEP 1: Define Global Palm Orientation ---
-        p_wrist = get_pt(0)
-        p_index = get_pt(5)
-        p_pinky = get_pt(17)
-        
-        # Calculate Palm Normal (The "Up" Vector)
-        # Vector from Wrist->Index and Wrist->Pinky defines the palm plane.
-        # Cross product gives the normal pointing OUT of the palm.
-        v_w_i = p_index - p_wrist
-        v_w_p = p_pinky - p_wrist
-        palm_normal = np.cross(v_w_p, v_w_i)
-        palm_normal /= (np.linalg.norm(palm_normal) + 1e-8)
+        # Reorder MediaPipe keypoints to match the MANOArmature structure
+        target_kpts = mp_kpts[self.mp_to_mano_idx]
 
-        # Compute Wrist Global Rotation
-        # Note: We align the wrist frame to the Middle Finger Metacarpal (Wrist->MiddleMCP)
-        # This is often more stable for MANO than IndexMCP.
-        p_middle = get_pt(9)
-        wrist_global_mat = self._compute_global_frame(p_wrist, p_middle, palm_normal)
-        
-        # Global Orient for MANO (Axis-Angle)
-        wrist_rot_vec = R.from_matrix(wrist_global_mat).as_rotvec()
+        # Center the target keypoints around the wrist (root joint)
+        # MINIMAL_IK optimizes rotations, so global translation must be zeroed out
+        root_translation = target_kpts[0].copy()
+        target_kpts -= root_translation
 
-        # Storage for parent frames
-        global_rotations = { -1: wrist_global_mat }
-
-        # --- STEP 2: Calculate Finger Joint Rotations ---
-        chains = [
-            # Index (Mano 0-2)
-            {'mano': [0, 1, 2], 'mp': [5, 6, 7, 8], 'parent_idx': -1},
-            # Middle (Mano 3-5)
-            {'mano': [3, 4, 5], 'mp': [9, 10, 11, 12], 'parent_idx': -1},
-            # Ring (Mano 6-8) - Fixed indices
-            {'mano': [6, 7, 8], 'mp': [13, 14, 15, 16], 'parent_idx': -1},
-            # Pinky (Mano 9-11) - Fixed indices
-            {'mano': [9, 10, 11], 'mp': [17, 18, 19, 20], 'parent_idx': -1},
-            # Thumb (Mano 12-14)
-            {'mano': [12, 13, 14], 'mp': [1, 2, 3, 4], 'parent_idx': -1},
-        ]
-
-        for chain in chains:
-            previous_mano_idx = chain['parent_idx']
-            
-            for i in range(3):
-                mano_idx = chain['mano'][i]
-                mp_start = chain['mp'][i]
-                mp_end   = chain['mp'][i+1]
-                
-                # 1. Compute Global Frame for this segment
-                # Critical: We continue to use 'palm_normal' as the up-vector reference.
-                # This enforces that all finger frames are consistent with the palm's orientation,
-                # preventing the "twisting" artifacts when the hand rotates.
-                child_global_mat = self._compute_global_frame(get_pt(mp_start), get_pt(mp_end), palm_normal)
-                global_rotations[mano_idx] = child_global_mat
-                
-                # 2. Get Parent Global Frame
-                parent_global_mat = global_rotations[previous_mano_idx]
-                
-                # 3. Compute Relative Rotation (Child relative to Parent)
-                # R_rel = R_parent^T * R_child
-                rel_mat = np.linalg.inv(parent_global_mat) @ child_global_mat
-                
-                # Convert to Axis-Angle
-                # Optimization: Enforce continuity to avoid 360-degree flips
-                rot_vec = R.from_matrix(rel_mat).as_rotvec()
-                
-                start_idx = mano_idx * 3
-                full_pose_flat[start_idx : start_idx+3] = rot_vec
-                
-                previous_mano_idx = mano_idx
-
-        # --- STEP 3: PCA Projection & Rendering ---
-        
-        # Get Mean and Components from MANO
-        hand_mean       = self.mano_model.hand_mean.detach().cpu().numpy()
-        hand_components = self.mano_model.hand_components.detach().cpu().numpy()
-        
-        # Subtract mean from our calculated pose
-        centered_pose = full_pose_flat - hand_mean
-        
-        # Project onto top N PCA components
-        # This filters out unnatural rotations (noise)
-        pca_coeffs = centered_pose.dot(hand_components[:self.num_pca_comps].T)
-        
-        # Prepare Tensors
-        # Hand Pose: The PCA coefficients
-        hand_pose_tensor = torch.tensor(pca_coeffs, dtype=torch.float32).unsqueeze(0)
-        # Global Orient: The wrist rotation
-        global_orient_tensor = torch.tensor(wrist_rot_vec, dtype=torch.float32).unsqueeze(0)
-
-        # Forward Pass
-        output = self.mano_model(
-            global_orient = global_orient_tensor,
-            hand_pose     = hand_pose_tensor,
-            betas         = torch.zeros([1, 10]),
-            return_verts  = True
+        # Run Inverse Kinematics solver
+        # Using previous frame's params as `init` gives a massive speedup and reduces jitter
+        self.current_params = self.solver.solve(
+            self.wrapper, 
+            target=target_kpts, 
+            init=self.current_params
         )
-        
-        # Render
-        vertices = output.vertices.detach().cpu().numpy().squeeze()
-        vertices -= np.mean(vertices, axis=0) # Center mesh
-        vertices *= 15.0 # Scale for viz
 
+        # Decode the solved parameters and update the kinematic model
+        shape, pose_pca, pose_glb = self.wrapper.decode(self.current_params)
+        vertices, _ = self.kinematic_model.set_params(
+            pose_glb=pose_glb, 
+            pose_pca=pose_pca, 
+            shape=shape
+        )
+
+        # Render the updated mesh
+        # Optionally re-apply the root translation if you want the hand to move in 3D space:
+        # vertices += root_translation 
+        
+        # Note: Depending on your Hand3D scale vs MANO scale, you may need to multiply vertices.
+        # Assuming Hand3D outputs coordinates similar to MANO meters scale.
+        
         self.viewer.render_lock.acquire()
         try:
             if self.hand_node:
                 self.scene.remove_node(self.hand_node)
-            new_mesh = pyrender.Mesh.from_trimesh(trimesh.Trimesh(vertices, self.mano_model.faces))
+            
+            # Reconstruct trimesh and add to scene
+            new_mesh = pyrender.Mesh.from_trimesh(
+                trimesh.Trimesh(vertices, self.kinematic_model.faces)
+            )
             self.hand_node = self.scene.add(new_mesh)
         finally:
             self.viewer.render_lock.release()
+
+        return;
 
 
 
@@ -258,10 +138,10 @@ def main():
             (success, frame) = cap.read()
             if not success: break;
 
-            frame = cv2.flip(frame, 1)
+            frame  = cv2.flip(frame, 1)
             tracker.detect(frame)
             result = hand_calculator.get_3d_coordinates(tracker.latest_result)
-            visualizer.update(result)
+            visualizer.update(result[0])
 
     cap.release()
     cv2.destroyAllWindows()

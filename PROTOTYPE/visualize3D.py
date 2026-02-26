@@ -1,10 +1,13 @@
 import cv2
+import numpy as np
 import matplotlib.pyplot as plt
 
 from mediapipeHLD import (HandTracker, model_path, mp_hands)
 
 from typing import TypeAlias
-HandData: TypeAlias = list[tuple[list[float], list[float], list[float]]]
+from numpy.typing import NDArray
+HandDataRaw:      TypeAlias = list[tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]]
+HandDataCombined: TypeAlias = NDArray[np.float64]
 
 
 
@@ -12,31 +15,40 @@ class Hand3D:
     def __init__(self): pass;
 
     def get_3d_coordinates(self,
-        result: HandTracker.latest_result) -> HandData:
-        ''' Transforms MediaPipe's hand landmarks into 3D coordinates. '''
+        result: HandTracker.latest_result) -> tuple[HandDataRaw, HandDataRaw]:
+        '''
+        Transforms MediaPipe's hand landmarks into 3D coordinates.
+        
+        Returns (hands_data, anchors_data) where each entry is a tuple of numpy arrays.
+        Combine with: np.add(hands_data, anchors_data)!
+        '''
 
-        hands_data = []
+        hands_data   = []
+        anchors_data = []
 
-        if (not result) or (not result.hand_landmarks): return hands_data;
+        if (not result) or (not result.hand_landmarks): return (hands_data, anchors_data);
 
         # Loop through detected hands
         # - Note: result.hand_world_landmarks contains the accurate metric shapes!
         for (i, world_landmarks) in enumerate(result.hand_world_landmarks):
-            # Define the anchor (Wrist - index 0)
             screen_landmarks = result.hand_landmarks[i]
-            anchor_x = screen_landmarks[0].x
-            anchor_y = screen_landmarks[0].y
-            anchor_z = self._estimate_scale(screen_landmarks, world_landmarks)
-            scale    = 3.0
+            n     = len(world_landmarks)
+            scale = 3.0
 
-            # Translate World Landmarks to the Screen Space anchor
-            xs = [lm.x * scale + anchor_x for lm in world_landmarks]
-            ys = [lm.y * scale + anchor_y for lm in world_landmarks]
-            zs = [lm.z * scale + anchor_z for lm in world_landmarks]
+            # Hand shape in World Coordinates
+            xw = np.array([lm.x * scale for lm in world_landmarks])
+            yw = np.array([lm.y * scale for lm in world_landmarks])
+            zw = np.array([lm.z * scale for lm in world_landmarks])
 
-            hands_data.append((xs, ys, zs))
-        
-        return hands_data;
+            # Define the anchor (Wrist - index 0)
+            ax = np.full(n, screen_landmarks[0].x)
+            ay = np.full(n, screen_landmarks[0].y)
+            az = np.full(n, self._estimate_scale(screen_landmarks, world_landmarks))
+
+            hands_data.append((xw, yw, zw))
+            anchors_data.append((ax, ay, az))
+
+        return (hands_data, anchors_data);
 
     def _estimate_scale(self, screen_lms, world_lms) -> float:
         '''
@@ -132,11 +144,11 @@ class HandVisualizer3D:
         
         return;
 
-    def update(self, hands_data: HandData) -> None:
+    def update(self, hands_data: HandDataCombined) -> None:
         ''' Updates the plot with new landmark data. '''
         
         # If no result, clear the plot...
-        if not hands_data:
+        if hands_data.size == 0:
             self._clear_plot()
             return;
 
@@ -208,7 +220,7 @@ def main():
             frame  = cv2.flip(frame, 1)
             tracker.detect(frame)
             result = hand_calculator.get_3d_coordinates(tracker.latest_result)
-            visualizer.update(result)
+            visualizer.update(np.add(result[0], result[1]))
 
     cap.release()
     cv2.destroyAllWindows()
