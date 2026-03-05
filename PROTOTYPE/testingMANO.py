@@ -2,14 +2,17 @@ import cv2
 import trimesh
 import pyrender
 import numpy as np
+import transforms3d
 
-from MINIMAL_IK.models import KinematicModel, KinematicPCAWrapper
-from MINIMAL_IK.solver import Solver
+from MINIMAL_IK.models import KinematicModel
 from MINIMAL_IK.armatures import MANOArmature
 from MINIMAL_IK.config import MANO_MODEL_PATH
 
+from MINIMAL_IK.AIK import adaptive_IK
+from MINIMAL_IK.smoother import OneEuroFilter
+
 from mediapipeHLD import (HandTracker, model_path)
-from visualize3D import (HandDataRaw, Hand3D)
+from visualize3D import Hand3D
 
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
@@ -28,127 +31,139 @@ For more information, please see http://www.intel.com/software/products/support/
 
 class ManoHandVisualizer:
     def __init__(self, model_path: str):
-        # 1. Initialize MINIMAL_IK Components
         self.kinematic_model = KinematicModel(model_path, MANOArmature)
         
-        # We use 15 PCA components for pose (plus 3 global rotation, 10 shape)
-        self.wrapper = KinematicPCAWrapper(self.kinematic_model, n_pose=15)
-        
-        # Initialize the IK Solver
-        # max_iter is kept relatively low (e.g., 5-10) for real-time performance
-        self.solver = Solver(max_iter=8, verbose=False)
-        
-        # Store previous params to use as the initial guess for the next frame (temporal smoothing)
-        self.current_params = np.zeros(self.wrapper.n_params)
+        # T-pose template (zeroed absolute pose)
+        (_, template_mano) = self.kinematic_model.set_params(pose_abs=np.zeros((16, 3)))
 
-        # 2. Map MediaPipe indices (0-20) to MANOArmature indices
-        # MP order: Wrist, Thumb(4), Index(4), Middle(4), Ring(4), Pinky(4)
-        # MANO order: W, I0-2, M0-2, L0-2(Pinky), R0-2(Ring), T0-2(Thumb), Ext(I3, M3, L3, R3, T3)
-        self.mp_to_mano_idx = [
-            0,             # W (Wrist)
-            5, 6, 7,       # Index (I0, I1, I2)
-            9, 10, 11,     # Middle (M0, M1, M2)
-            17, 18, 19,    # Pinky (L0, L1, L2)
-            13, 14, 15,    # Ring (R0, R1, R2)
-            1, 2, 3,       # Thumb (T0, T1, T2)
-            8,             # Index Tip (I3)
-            12,            # Middle Tip (M3)
-            20,            # Pinky Tip (L3)
-            16,            # Ring Tip (R3)
-            4              # Thumb Tip (T3)
+        # MANO -> MediaPipe
+        mano_to_mp_idx = [
+            0,              # MP       0: Wrist  -> MANO 0 ('W')
+            13, 14, 15, 20, # MP  1 -  4: Thumb  -> MANO T0, T1, T2, T3
+             1,  2,  3, 16, # MP  5 -  8: Index  -> MANO I0, I1, I2, I3
+             4,  5,  6, 17, # MP  9 - 12: Middle -> MANO M0, M1, M2, M3
+            10, 11, 12, 19, # MP 13 - 16: Ring   -> MANO R0, R1, R2, R3
+             7,  8,  9, 18  # MP 17 - 20: Pinky  -> MANO L0, L1, L2, L3
         ]
+        self.template_kpts = template_mano[mano_to_mp_idx]
 
-        # 3. Setup Pyrender Scene
-        self.scene  = pyrender.Scene(bg_color = [0.1, 0.1, 0.1])
-        light       = pyrender.DirectionalLight(color = [1.0, 1.0, 1.0], intensity = 3.0)
-        self.scene.add(light, pose = np.eye(4))
-        
-        self.viewer = pyrender.Viewer(
-            self.scene,
-            run_in_thread        = True,
-            use_raymond_lighting = True
-        )
+        self.filters = {
+            'Right': OneEuroFilter(mincutoff = 2.0, beta = 0.05),
+            'Left':  OneEuroFilter(mincutoff = 2.0, beta = 0.05)
+        }
+
+        # Pyrender Setup
+        self.scene = pyrender.Scene(bg_color = [0.1, 0.1, 0.1])
+        self.scene.add(pyrender.DirectionalLight(color = [1.0, 1.0, 1.0], intensity = 3.0))
+        self.viewer    = pyrender.Viewer(self.scene, run_in_thread = True, use_raymond_lighting = True)
         self.hand_node = None
 
         return;
 
-    def update(self, hands_data: HandDataRaw) -> None:
-        if not hands_data: return
-
-        # Extract 3D coordinates from MediaPipe result
-        (xs, ys, zs) = hands_data[0]
-        mp_kpts = np.vstack((xs, ys, zs)).T  # Shape: (21, 3)
-
-        # Reorder MediaPipe keypoints to match the MANOArmature structure
-        target_kpts = mp_kpts[self.mp_to_mano_idx]
-
-        # Center the target keypoints around the wrist (root joint)
-        # MINIMAL_IK optimizes rotations, so global translation must be zeroed out
-        root_translation = target_kpts[0].copy()
-        target_kpts -= root_translation
-
-        # Run Inverse Kinematics solver
-        # Using previous frame's params as `init` gives a massive speedup and reduces jitter
-        self.current_params = self.solver.solve(
-            self.wrapper, 
-            target=target_kpts, 
-            init=self.current_params
-        )
-
-        # Decode the solved parameters and update the kinematic model
-        shape, pose_pca, pose_glb = self.wrapper.decode(self.current_params)
-        vertices, _ = self.kinematic_model.set_params(
-            pose_glb=pose_glb, 
-            pose_pca=pose_pca, 
-            shape=shape
-        )
-
-        # Render the updated mesh
-        # Optionally re-apply the root translation if you want the hand to move in 3D space:
-        # vertices += root_translation 
+    def update(self, hands_data: tuple, anchors_data: tuple | None = None, handedness: str = 'Right') -> None:
+        if not hands_data: return;
         
-        # Note: Depending on your Hand3D scale vs MANO scale, you may need to multiply vertices.
-        # Assuming Hand3D outputs coordinates similar to MANO meters scale.
+        (xw, yw, zw) = hands_data[0]
+        # (ax, ay, az) = anchors_data[0]
         
+        xs = xw
+        ys = yw
+        zs = zw
+        
+        raw_joints = np.vstack((xs, ys, zs)).T
+        
+        is_left = (handedness == 'Left')
+        if is_left:
+            raw_joints[:, 0] *= -1.0
+
+        filtered_joints = self.filters[handedness].process(raw_joints)
+
+        template = self.template_kpts
+        ratio    = np.linalg.norm(template[9] - template[0]) / \
+            (np.linalg.norm(filtered_joints[9] - filtered_joints[0]) + 1e-8)
+        
+        j3d_pre_process = filtered_joints * ratio
+        j3d_pre_process = j3d_pre_process - j3d_pre_process[0] + template[0]
+
+        pose_R = adaptive_IK(T_ = template, P_ = j3d_pre_process) 
+        
+        pose_abs = np.zeros((16, 3))
+        for i in range(16):
+            rotation_matrix = pose_R[0, i] 
+            if np.allclose(rotation_matrix, 0.0):
+                rotation_matrix = np.eye(3)
+            try:
+                (axis, angle) = transforms3d.axangles.mat2axangle(rotation_matrix)
+                if np.isnan(axis).any():
+                    pose_abs[i] = np.array([0.0, 0.0, 0.0])
+                else:
+                    # --- FIX INVERTED FINGERS --- #
+                    if i == 0:
+                        pose_abs[i] = axis * angle
+                    else:
+                        # For the fingers (i > 0): if the space was mirrored,
+                        # the IK cross-products calculate inverted bends...
+                        if is_left: 
+                            pose_abs[i] = -(axis * angle)
+                        else:
+                            pose_abs[i] = axis * angle
+            except ValueError:
+                pose_abs[i] = np.array([0.0, 0.0, 0.0])
+
+        # Apply the solved Axis-Angle rotations directly to the model.
+        # pose_abs already includes the root rotation at index 0.
+        (vertices, _) = self.kinematic_model.set_params(pose_abs = pose_abs)
+        
+        # Mirror vertices back for rendering if dealing with a Left Hand
+        if is_left: vertices[:, 0] *= -1.0
+
         self.viewer.render_lock.acquire()
         try:
-            if self.hand_node:
-                self.scene.remove_node(self.hand_node)
-            
-            # Reconstruct trimesh and add to scene
-            new_mesh = pyrender.Mesh.from_trimesh(
+            if self.hand_node: self.scene.remove_node(self.hand_node)
+            mesh           = pyrender.Mesh.from_trimesh(
                 trimesh.Trimesh(vertices, self.kinematic_model.faces)
             )
-            self.hand_node = self.scene.add(new_mesh)
+            self.hand_node = self.scene.add(mesh)
         finally:
             self.viewer.render_lock.release()
 
         return;
 
-
-
-def main():
+def main(window_title: str = 'Testing MANO') -> None:
+    # Initialize Webcam
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened(): raise RuntimeError('Could not open webcam.');
 
     hand_calculator = Hand3D()
     visualizer      = ManoHandVisualizer(MANO_MODEL_PATH)
 
-    with HandTracker(model_path) as tracker:
-        while cap.isOpened():
+    with HandTracker(model_path) as tracker: 
+        while cap.isOpened() and visualizer.viewer.is_active:
             (success, frame) = cap.read()
             if not success: break;
-
-            frame  = cv2.flip(frame, 1)
+            
+            frame = cv2.flip(frame, 1)
             tracker.detect(frame)
-            result = hand_calculator.get_3d_coordinates(tracker.latest_result)
-            visualizer.update(result[0])
+            tracker.draw(frame)
+            
+            result          = hand_calculator.get_3d_coordinates(tracker.latest_result)
+            (hands_data, _) = result
+            
+            if hands_data and tracker.latest_result and tracker.latest_result.handedness:
+                handedness_label = tracker.latest_result.handedness[0][0].category_name
+                visualizer.update(hands_data, handedness = handedness_label)
+            
+            cv2.imshow(window_title, frame)
+            
+            # Check if the window is closed or if the ESC key is pressed to exit the loop...
+            if (cv2.waitKey(1) & 0xFF == 27) or \
+                cv2.getWindowProperty(window_title, cv2.WND_PROP_VISIBLE) < 1:
+                break;
 
     cap.release()
     cv2.destroyAllWindows()
 
     return;
 
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

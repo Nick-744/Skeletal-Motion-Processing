@@ -36,7 +36,7 @@ VisionRunningMode     = mp.tasks.vision.RunningMode
 
 
 class HandTracker:
-    def __init__(self, model_path: str, num_hands: int = 2) -> None:
+    def __init__(self, model_path: str, num_hands: int = 2):
         self._latest_result = None # HandLandmarkerResult | None
         self._lock          = threading.Lock()
 
