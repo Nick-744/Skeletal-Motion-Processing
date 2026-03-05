@@ -4,12 +4,11 @@ import pyrender
 import numpy as np
 import transforms3d
 
-from MINIMAL_IK.models import KinematicModel
-from MINIMAL_IK.armatures import MANOArmature
-from MINIMAL_IK.config import MANO_MODEL_PATH
-
-from MINIMAL_IK.AIK import adaptive_IK
-from MINIMAL_IK.smoother import OneEuroFilter
+from MANOkinematics.AIK import adaptive_IK
+from MANOkinematics.smoother import OneEuroFilter
+from MANOkinematics.models import KinematicModel
+from MANOkinematics.armatures import MANOArmature
+from MANOkinematics.config import MANO_MODEL_PATH
 
 from mediapipeHLD import (HandTracker, model_path)
 from visualize3D import Hand3D

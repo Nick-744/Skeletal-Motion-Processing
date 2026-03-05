@@ -1,6 +1,9 @@
 __pycache__/
-/PROTOTYPE/ASSETS
 DRAFT/~$IDEAS.docx
+/PROTOTYPE/ASSETS/processed_models
+PROTOTYPE/ASSETS/mano/MANO_LEFT.pkl
+PROTOTYPE/ASSETS/mano/MANO_RIGHT.pkl
+PROTOTYPE/ASSETS/Google_AI_Edge/hand_landmarker.task
 
 
 
