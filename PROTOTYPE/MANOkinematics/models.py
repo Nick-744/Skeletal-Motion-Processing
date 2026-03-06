@@ -46,15 +46,15 @@ class KinematicModel():
       params = pickle.load(f)
 
       self.pose_pca_basis = params['pose_pca_basis']
-      self.pose_pca_mean  = params['pose_pca_mean']
+      self.pose_pca_mean  = params['pose_pca_mean' ]
 
       self.J_regressor = params['J_regressor']
 
       self.skinning_weights = params['skinning_weights']
 
-      self.mesh_pose_basis  = params['mesh_pose_basis'] # Pose blend shape
+      self.mesh_pose_basis  = params['mesh_pose_basis' ] # Pose blend shape
       self.mesh_shape_basis = params['mesh_shape_basis']
-      self.mesh_template    = params['mesh_template']
+      self.mesh_template    = params['mesh_template'   ]
 
       self.faces =  params['faces']
 

@@ -46,10 +46,12 @@ if not hasattr(inspect, 'getargspec'):
 
 
 
-def prepare_mano_model():
+def prepare_mano_model(
+    source_path: str = OFFICIAL_MANO_PATH,
+    target_path: str = MANO_MODEL_PATH) -> None:
   ''' Convert the official MANO model into compatible format with this project. '''
 
-  with open(OFFICIAL_MANO_PATH, 'rb') as f:
+  with open(source_path, 'rb') as f:
     data = pickle.load(f, encoding = 'latin1')
   
   params = {
@@ -59,15 +61,15 @@ def prepare_mano_model():
     'skinning_weights': np.array(data['weights']),
 
     # pose blend shape
-    'mesh_pose_basis':  np.array(data['posedirs']),
-    'mesh_shape_basis': np.array(data['shapedirs']),
+    'mesh_pose_basis':  np.array(data['posedirs'  ]),
+    'mesh_shape_basis': np.array(data['shapedirs' ]),
     'mesh_template':    np.array(data['v_template']),
     'faces':            np.array(data['f']),
     'parents':          data['kintree_table'][0].tolist()
   }
   params['parents'][0] = None
   
-  with open(MANO_MODEL_PATH, 'wb') as f:
+  with open(target_path, 'wb') as f:
     pickle.dump(params, f)
   
   return;
@@ -75,5 +77,13 @@ def prepare_mano_model():
 
 
 if __name__ == '__main__':
+  # Left Hand
   prepare_mano_model()
-  print('MANO model prepared and saved to:\n->', MANO_MODEL_PATH)
+  print('MANO model (left) prepared and saved to:\n->', MANO_MODEL_PATH)
+
+  # Right Hand
+  prepare_mano_model(
+    source_path = OFFICIAL_MANO_PATH_RIGHT,
+    target_path = MANO_MODEL_PATH_RIGHT
+  )
+  print('\nMANO model (right) prepared and saved to:\n->', MANO_MODEL_PATH_RIGHT)

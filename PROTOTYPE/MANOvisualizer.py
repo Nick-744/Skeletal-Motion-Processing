@@ -8,7 +8,7 @@ from MANOkinematics.AIK import adaptive_IK
 from MANOkinematics.smoother import OneEuroFilter
 from MANOkinematics.models import KinematicModel
 from MANOkinematics.armatures import MANOArmature
-from MANOkinematics.config import MANO_MODEL_PATH
+from MANOkinematics.config import (MANO_MODEL_PATH, MANO_MODEL_PATH_RIGHT)
 
 from mediapipeHLD import (HandTracker, model_path)
 from visualize3D import Hand3D
@@ -33,7 +33,7 @@ class ManoHandVisualizer:
         self.kinematic_model = KinematicModel(model_path, MANOArmature)
         
         # T-pose template (zeroed absolute pose)
-        (_, template_mano) = self.kinematic_model.set_params(pose_abs=np.zeros((16, 3)))
+        (_, template_mano) = self.kinematic_model.set_params(pose_abs = np.zeros((16, 3)))
 
         # MANO -> MediaPipe
         mano_to_mp_idx = [
@@ -128,6 +128,8 @@ class ManoHandVisualizer:
 
         return;
 
+
+
 def main(window_title: str = 'Testing MANO') -> None:
     # Initialize Webcam
     cap = cv2.VideoCapture(0)
@@ -159,10 +161,15 @@ def main(window_title: str = 'Testing MANO') -> None:
                 cv2.getWindowProperty(window_title, cv2.WND_PROP_VISIBLE) < 1:
                 break;
 
+    # Cleanup
     cap.release()
     cv2.destroyAllWindows()
+    if visualizer.viewer.is_active:
+        visualizer.viewer.close_external()
 
     return;
+
+
 
 if __name__ == '__main__':
     main()
