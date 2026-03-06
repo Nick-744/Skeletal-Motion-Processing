@@ -103,7 +103,7 @@ class HandVisualizer3D:
         # Init scatter plots (Joints)
         self.scatters = [
             self.ax.scatter([], [], [], s = 40, c = color, depthshade = False)
-            for color in ['#FF0000', '#0000FF'] # Red (Hand 1st), Blue (Hand 2nd)
+            for color in ['#FF0000', '#0000FF'] # Red (1st Hand), Blue (2nd Hand)
         ]
         
         # Init line plots (Bones) - List of lists [hand_idx][bone_idx]

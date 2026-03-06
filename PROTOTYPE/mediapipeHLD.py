@@ -20,39 +20,40 @@ import mediapipe as mp
 
 # ---< Paths >--- #
 current_dir = os.path.dirname(os.path.realpath(__file__))
-model_path  = os.path.join(current_dir, 'ASSETS', 'Google_AI_Edge', 'hand_landmarker.task')
+model_path  = os.path.join(current_dir, 'ASSETS', 'Google_AI_Edge', 'gesture_recognizer.task')
 
 # ---< Shortcuts >--- #
 mp_hands          = mp.tasks.vision.HandLandmarksConnections
 mp_drawing        = mp.tasks.vision.drawing_utils
 mp_drawing_styles = mp.tasks.vision.drawing_styles
 
-BaseOptions           = mp.tasks.BaseOptions
-HandLandmarker        = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-HandLandmarkerResult  = NewType('HandLandmarkerResult', mp.tasks.vision.HandLandmarkerResult) # Just for better type hints!
-VisionRunningMode     = mp.tasks.vision.RunningMode
+BaseOptions              = mp.tasks.BaseOptions
+GestureRecognizer        = mp.tasks.vision.GestureRecognizer
+GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
+GestureRecognizerResult  = NewType('GestureRecognizerResult', mp.tasks.vision.GestureRecognizerResult) # Better type hints!
+VisionRunningMode        = mp.tasks.vision.RunningMode
 
 
 
 class HandTracker:
     def __init__(self, model_path: str, num_hands: int = 2):
-        self._latest_result = None # HandLandmarkerResult | None
+        self._latest_result = None # GestureRecognizerResult | None
         self._lock          = threading.Lock()
 
-        # Create a hand landmarker instance with the live stream mode:
-        options = HandLandmarkerOptions(
+        # Create a gesture recognizer instance with the live stream mode:
+        options = GestureRecognizerOptions(
             base_options    = BaseOptions(model_asset_path = model_path),
             num_hands       = num_hands,
             running_mode    = VisionRunningMode.LIVE_STREAM,
-            result_callback = self._on_result,
+            result_callback = self._on_result
         )
 
-        self._landmarker = HandLandmarker.create_from_options(options) # The landmarker is initialized...
+        # The gesture recognizer (+ integrated hand landmarker) is initialized...
+        self._gesture_recognizer = GestureRecognizer.create_from_options(options)
 
         return;
 
-    def _on_result(self, result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int) -> None:
+    def _on_result(self, result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int) -> None:
         ''' Internal callback (HandLandmarkerOptions.result_callback). '''
         with self._lock:
             self._latest_result = result
@@ -60,7 +61,7 @@ class HandTracker:
         return;
 
     @property # Access a method as if it were an attribute...
-    def latest_result(self) -> HandLandmarkerResult | None:
+    def latest_result(self) -> GestureRecognizerResult | None:
         ''' Get the latest hand landmark detection result.
             Returns "None" if no result is available yet. '''
         with self._lock:
@@ -74,11 +75,11 @@ class HandTracker:
         rgb      = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format = mp.ImageFormat.SRGB, data = rgb)
 
-        # Send live image data to perform hand landmarks detection.
+        # Send live image data to perform gesture recognition (+ hand landmarks detection).
         # The results are accessible via the "result_callback" provided in
-        # the "HandLandmarkerOptions" object!
-        # The hand landmarker must be created with the live stream mode...
-        self._landmarker.detect_async(mp_image, int(time() * 1e6))
+        # the "GestureRecognizerOptions" object!
+        # The gesture recognizer must be created with the live stream mode...
+        self._gesture_recognizer.recognize_async(mp_image, int(time() * 1e6))
 
         return;
 
@@ -100,11 +101,48 @@ class HandTracker:
         return;
 
     # ---< Cleanup resources >--- #
-    def close(self): self._landmarker.close()
+    def close(self): self._gesture_recognizer.close()
     
     def __enter__(self): return self; # Context-manager support
 
     def __exit__(self, *_): self.close()
+
+
+
+# ---< Helper functions >--- #
+def reverse_handedness(handedness: str) -> str:
+    ''' Reverse the handedness label.
+        Use if input image is flipped horizontally (Selfie). '''
+
+    if handedness == 'Left':  return 'R';
+    if handedness == 'Right': return 'L';
+
+    return '?';
+
+def render_gesture_result(frame: 'cv2.Mat', gesture_result: GestureRecognizerResult) -> None:
+    ''' Render gesture recognition results on frame in-place. '''
+
+    if gesture_result.gestures:
+        gesture_name = gesture_result.gestures[0][0].category_name
+        handedness   = gesture_result.handedness[0][0].category_name
+        cv2.putText(
+            frame, f'{reverse_handedness(handedness)}: {gesture_name}',
+            (15, 80),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1, (255, 0, 0), 2
+        )
+
+        if len(gesture_result.gestures) > 1:
+            gesture_name = gesture_result.gestures[1][0].category_name
+            handedness   = gesture_result.handedness[1][0].category_name
+            cv2.putText(
+                frame, f'{reverse_handedness(handedness)}: {gesture_name}',
+                (15, 120),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1, (255, 0, 0), 2
+            )
+
+    return;
 
 
 
@@ -114,8 +152,8 @@ def run(window_title: str = 'Testing...') -> None:
     if not cap.isOpened(): raise RuntimeError('Could not open webcam.');
 
     # Moving average FPS calculation
-    frame_times = deque(maxlen = 20)
-    prev_time   = 0 # Initialize time for FPS calculation
+    frame_times = deque(maxlen = 30)
+    prev_time   = time() # Initialize time for FPS calculation
 
     with HandTracker(model_path) as tracker:
         while True:
@@ -140,6 +178,10 @@ def run(window_title: str = 'Testing...') -> None:
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1, (0, 255, 0), 2
             )
+
+            # Render gesture recognition results on frame
+            if tracker.latest_result is not None:
+                render_gesture_result(frame, tracker.latest_result)
 
             cv2.imshow(window_title, frame)
     
