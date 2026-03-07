@@ -5,12 +5,11 @@ import numpy as np
 import transforms3d
 
 from MANOkinematics.AIK import adaptive_IK
-from MANOkinematics.smoother import OneEuroFilter
 from MANOkinematics.models import KinematicModel
 from MANOkinematics.armatures import MANOArmature
 from MANOkinematics.config import (MANO_MODEL_PATH, MANO_MODEL_PATH_RIGHT)
 
-from mediapipeHLD import (HandTracker, model_path)
+from mediapipeHLD import (HandTracker, reverse_handedness, model_path)
 from visualize3D import Hand3D
 
 import os
@@ -46,11 +45,6 @@ class ManoHandVisualizer:
         ]
         self.template_kpts = template_mano[mano_to_mp_idx]
 
-        self.filters = {
-            'Right': OneEuroFilter(mincutoff = 2.0, beta = 0.05),
-            'Left':  OneEuroFilter(mincutoff = 2.0, beta = 0.05)
-        }
-
         # Pyrender Setup
         self.scene = pyrender.Scene(bg_color = [0.1, 0.1, 0.1])
         self.scene.add(pyrender.DirectionalLight(color = [1.0, 1.0, 1.0], intensity = 3.0))
@@ -59,7 +53,7 @@ class ManoHandVisualizer:
 
         return;
 
-    def update(self, hands_data: tuple, anchors_data: tuple | None = None, handedness: str = 'Right') -> None:
+    def update(self, hands_data: tuple, anchors_data: tuple | None = None, handedness: str = 'R') -> None:
         if not hands_data: return;
         
         (xw, yw, zw) = hands_data[0]
@@ -69,19 +63,13 @@ class ManoHandVisualizer:
         ys = yw
         zs = zw
         
-        raw_joints = np.vstack((xs, ys, zs)).T
-        
-        is_left = (handedness == 'Left')
-        if is_left:
-            raw_joints[:, 0] *= -1.0
-
-        filtered_joints = self.filters[handedness].process(raw_joints)
+        joints = np.vstack((xs, ys, zs)).T
 
         template = self.template_kpts
         ratio    = np.linalg.norm(template[9] - template[0]) / \
-            (np.linalg.norm(filtered_joints[9] - filtered_joints[0]) + 1e-8)
+            (np.linalg.norm(joints[9] - joints[0]) + 1e-8)
         
-        j3d_pre_process = filtered_joints * ratio
+        j3d_pre_process = joints * ratio
         j3d_pre_process = j3d_pre_process - j3d_pre_process[0] + template[0]
 
         pose_R = adaptive_IK(T_ = template, P_ = j3d_pre_process) 
@@ -96,25 +84,13 @@ class ManoHandVisualizer:
                 if np.isnan(axis).any():
                     pose_abs[i] = np.array([0.0, 0.0, 0.0])
                 else:
-                    # --- FIX INVERTED FINGERS --- #
-                    if i == 0:
-                        pose_abs[i] = axis * angle
-                    else:
-                        # For the fingers (i > 0): if the space was mirrored,
-                        # the IK cross-products calculate inverted bends...
-                        if is_left: 
-                            pose_abs[i] = -(axis * angle)
-                        else:
-                            pose_abs[i] = axis * angle
+                    pose_abs[i] = axis * angle
             except ValueError:
                 pose_abs[i] = np.array([0.0, 0.0, 0.0])
 
         # Apply the solved Axis-Angle rotations directly to the model.
         # pose_abs already includes the root rotation at index 0.
         (vertices, _) = self.kinematic_model.set_params(pose_abs = pose_abs)
-        
-        # Mirror vertices back for rendering if dealing with a Left Hand
-        if is_left: vertices[:, 0] *= -1.0
 
         self.viewer.render_lock.acquire()
         try:
@@ -150,8 +126,10 @@ def main(window_title: str = 'Testing MANO') -> None:
             result          = hand_calculator.get_3d_coordinates(tracker.latest_result)
             (hands_data, _) = result
             
-            if hands_data and tracker.latest_result and tracker.latest_result.handedness:
-                handedness_label = tracker.latest_result.handedness[0][0].category_name
+            if hands_data and tracker.latest_result:
+                # - Note: Because of the flipping (Selfie mode), the handedness is reversed...
+                # As a result, the right hand uses the left MANO model and the left hand uses the right MANO model!
+                handedness_label = reverse_handedness(tracker.latest_result.handedness[0][0].category_name)
                 visualizer.update(hands_data, handedness = handedness_label)
             
             cv2.imshow(window_title, frame)

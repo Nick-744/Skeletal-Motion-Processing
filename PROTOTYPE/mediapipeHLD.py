@@ -111,8 +111,15 @@ class HandTracker:
 
 # ---< Helper functions >--- #
 def reverse_handedness(handedness: str) -> str:
-    ''' Reverse the handedness label.
-        Use if input image is flipped horizontally (Selfie). '''
+    '''
+    Reverse the handedness label.
+    Use if input image is flipped horizontally (Selfie).
+
+    Returns
+    -------
+    str
+        'L' for 'Right', 'R' for 'Left', '?' for unknown.
+    '''
 
     if handedness == 'Left':  return 'R';
     if handedness == 'Right': return 'L';

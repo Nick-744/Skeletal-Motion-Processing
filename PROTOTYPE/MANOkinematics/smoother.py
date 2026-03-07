@@ -52,7 +52,19 @@ class OneEuroFilter:
         return 1.0 / (1.0 + tau / te);
 
     def process(self, x: np.ndarray) -> np.ndarray:
-        ''' Compute the filtered signal. '''
+        '''
+        Compute the filtered signal.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Typically a (21, 3) matrix [raw signal] representing 21 hand landmarks in 3D space.
+
+        Returns
+        -------
+        np.ndarray
+            The smoothed signal with the same shape as the input (21, 3).
+        '''
 
         prev_x = self.x_filter.prev_raw
 

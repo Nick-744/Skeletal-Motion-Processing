@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from MANOkinematics.smoother import OneEuroFilter
 
 from mediapipeHLD import (HandTracker, model_path, mp_hands)
 
@@ -12,7 +13,11 @@ HandDataCombined: TypeAlias = NDArray[np.float64]
 
 
 class Hand3D:
-    def __init__(self): pass;
+    def __init__(self, mincutoff: float = 2.0, beta: float = 0.05):
+        self.hand_filters   = [OneEuroFilter(mincutoff = mincutoff, beta = beta) for _ in range(2)]
+        self.anchor_filters = [OneEuroFilter(mincutoff = mincutoff, beta = beta) for _ in range(2)]
+
+        return;
 
     def get_3d_coordinates(self,
         result: HandTracker.latest_result) -> tuple[HandDataRaw, HandDataRaw]:
@@ -36,14 +41,19 @@ class Hand3D:
             scale = 3.0
 
             # Hand shape in World Coordinates
-            xw = np.array([lm.x * scale for lm in world_landmarks])
-            yw = np.array([lm.y * scale for lm in world_landmarks])
-            zw = np.array([lm.z * scale for lm in world_landmarks])
+            raw_coords      = np.array([[lm.x, lm.y, lm.z] for lm in world_landmarks]) * scale
+            filtered_coords = self.hand_filters[i].process(raw_coords)
+            (xw, yw, zw)    = (filtered_coords[:, 0], filtered_coords[:, 1], filtered_coords[:, 2])
 
             # Define the anchor (Wrist - index 0)
-            ax = np.full(n, screen_landmarks[0].x)
-            ay = np.full(n, screen_landmarks[0].y)
-            az = np.full(n, self._estimate_scale(screen_landmarks, world_landmarks))
+            raw_anchor = np.array([
+                screen_landmarks[0].x,
+                screen_landmarks[0].y,
+                self._estimate_scale(screen_landmarks, world_landmarks)
+            ])
+            filtered_anchor = self.anchor_filters[i].process(raw_anchor)
+            (fax, fay, faz) = filtered_anchor
+            (ax, ay, az)    = (np.full(n, fax), np.full(n, fay), np.full(n, faz))
 
             hands_data.append((xw, yw, zw))
             anchors_data.append((ax, ay, az))
