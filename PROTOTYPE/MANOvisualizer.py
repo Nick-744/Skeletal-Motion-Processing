@@ -1,8 +1,7 @@
 import cv2
-import trimesh
-import pyrender
 import numpy as np
 import transforms3d
+import open3d as o3d
 
 from MANOkinematics.AIK import adaptive_IK
 from MANOkinematics.models import KinematicModel
@@ -32,7 +31,7 @@ class ManoHandVisualizer:
         self.kinematic_model = KinematicModel(model_path, MANOArmature)
         
         # T-pose template (zeroed absolute pose)
-        (_, template_mano) = self.kinematic_model.set_params(pose_abs = np.zeros((16, 3)))
+        (initial_vertices, template_mano) = self.kinematic_model.set_params(pose_abs = np.zeros((16, 3)))
 
         # MANO -> MediaPipe
         mano_to_mp_idx = [
@@ -45,11 +44,26 @@ class ManoHandVisualizer:
         ]
         self.template_kpts = template_mano[mano_to_mp_idx]
 
-        # Pyrender Setup
-        self.scene = pyrender.Scene(bg_color = [0.1, 0.1, 0.1])
-        self.scene.add(pyrender.DirectionalLight(color = [1.0, 1.0, 1.0], intensity = 3.0))
-        self.viewer    = pyrender.Viewer(self.scene, run_in_thread = True, use_raymond_lighting = True)
-        self.hand_node = None
+        # Open3D Setup
+        self.vis = o3d.visualization.Visualizer()
+        self.vis.create_window(window_name = 'MANO 3D Hand', width = 800, height = 600)
+        
+        # Initialize an Open3D TriangleMesh
+        self.mesh           = o3d.geometry.TriangleMesh()
+        self.mesh.vertices  = o3d.utility.Vector3dVector(initial_vertices)
+        self.mesh.triangles = o3d.utility.Vector3iVector(self.kinematic_model.faces) # Faces remain constant!
+        self.mesh.compute_vertex_normals()
+        self.mesh.paint_uniform_color([0.7, 0.7, 0.7])
+        self.vis.add_geometry(self.mesh) # Render!
+
+        # Set the "up" direction to be along the negative Y-axis...
+        view_control = self.vis.get_view_control()
+        view_control.set_up([0, -1, 0])
+        view_control.set_front([0, 0, -1]) # Keep the camera looking straight ahead...
+        
+        # Open3D Render Options
+        opt                  = self.vis.get_render_option()
+        opt.background_color = np.asarray([0.1, 0.1, 0.1])
 
         return;
 
@@ -88,15 +102,10 @@ class ManoHandVisualizer:
         # pose_abs already includes the root rotation at index 0.
         (vertices, _) = self.kinematic_model.set_params(pose_abs = pose_abs)
 
-        self.viewer.render_lock.acquire()
-        try:
-            if self.hand_node: self.scene.remove_node(self.hand_node)
-            mesh           = pyrender.Mesh.from_trimesh(
-                trimesh.Trimesh(vertices, self.kinematic_model.faces)
-            )
-            self.hand_node = self.scene.add(mesh)
-        finally:
-            self.viewer.render_lock.release()
+        # Update existing mesh vertices and recompute normals for lighting
+        self.mesh.vertices = o3d.utility.Vector3dVector(vertices)
+        self.mesh.compute_vertex_normals()
+        self.vis.update_geometry(self.mesh)
 
         return;
 
@@ -111,7 +120,9 @@ def main(window_title: str = 'Testing MANO') -> None:
     visualizer      = ManoHandVisualizer(MANO_MODEL_PATH)
 
     with HandTracker(model_path) as tracker: 
-        while cap.isOpened() and visualizer.viewer.is_active:
+        while cap.isOpened():
+            if not visualizer.vis.poll_events(): break; # Exit if the Open3D window is closed...
+            
             (success, frame) = cap.read()
             if not success: break;
             
@@ -127,6 +138,9 @@ def main(window_title: str = 'Testing MANO') -> None:
                 handedness_label = reverse_handedness(tracker.latest_result.handedness[0][0].category_name)
                 visualizer.update(hands_data, anchors_data, handedness = handedness_label)
             
+            # Re-render Open3D
+            visualizer.vis.update_renderer()
+
             cv2.imshow(window_title, frame)
             
             # Check if the window is closed or if the ESC key is pressed to exit the loop...
@@ -137,8 +151,7 @@ def main(window_title: str = 'Testing MANO') -> None:
     # Cleanup
     cap.release()
     cv2.destroyAllWindows()
-    if visualizer.viewer.is_active:
-        visualizer.viewer.close_external()
+    visualizer.vis.destroy_window()
 
     return;
 
