@@ -45,6 +45,8 @@ class MANOArmature:
 
   
 
+  # Kinematic Hierarchy
+  # For any joint 'k', snap_parent[k] gives the joint it is attached to.
   snap_parent = [
     0, # 0's parent
 
@@ -64,8 +66,10 @@ class MANOArmature:
     17, 18, 19
   ]
 
+  # The list of joints that the IK solver needs to calculate relative rotations for.
   kinematic_tree = [2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19, 20]
 
+  # Translation dictionary - MediaPipe2MANO
   id_to_rot = {
      2: 13,  3: 14,  4: 15,
      6:  1,  7:  2,  8:  3,

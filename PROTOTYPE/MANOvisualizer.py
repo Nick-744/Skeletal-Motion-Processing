@@ -57,13 +57,9 @@ class ManoHandVisualizer:
         if not hands_data: return;
         
         (xw, yw, zw) = hands_data[0]
-        # (ax, ay, az) = anchors_data[0]
+        (ax, ay, az) = anchors_data[0]
         
-        xs = xw
-        ys = yw
-        zs = zw
-        
-        joints = np.vstack((xs, ys, zs)).T
+        joints = np.vstack((xw, yw, zw)).T
 
         template = self.template_kpts
         ratio    = np.linalg.norm(template[9] - template[0]) / \
@@ -123,14 +119,13 @@ def main(window_title: str = 'Testing MANO') -> None:
             tracker.detect(frame)
             tracker.draw(frame)
             
-            result          = hand_calculator.get_3d_coordinates(tracker.latest_result)
-            (hands_data, _) = result
+            (hands_data, anchors_data) = hand_calculator.get_3d_coordinates(tracker.latest_result)
             
             if hands_data and tracker.latest_result:
                 # - Note: Because of the flipping (Selfie mode), the handedness is reversed...
                 # As a result, the right hand uses the left MANO model and the left hand uses the right MANO model!
                 handedness_label = reverse_handedness(tracker.latest_result.handedness[0][0].category_name)
-                visualizer.update(hands_data, handedness = handedness_label)
+                visualizer.update(hands_data, anchors_data, handedness = handedness_label)
             
             cv2.imshow(window_title, frame)
             

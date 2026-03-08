@@ -60,7 +60,7 @@ def prepare_mano_model(
     'J_regressor':      data['J_regressor'].toarray(),
     'skinning_weights': np.array(data['weights']),
 
-    # pose blend shape
+    # Pose blend shape
     'mesh_pose_basis':  np.array(data['posedirs'  ]),
     'mesh_shape_basis': np.array(data['shapedirs' ]),
     'mesh_template':    np.array(data['v_template']),
