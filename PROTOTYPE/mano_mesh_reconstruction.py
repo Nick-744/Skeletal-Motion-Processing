@@ -55,7 +55,7 @@ class ManoHand:
 
         if not hands_data: return (None, None);
         
-        (xw, yw, zw) = hands_data[0]
+        (xw, yw, zw) = hands_data
         joints       = np.vstack((xw, yw, zw)).T
 
         template = self.template_kpts
@@ -89,22 +89,22 @@ class ManoHand:
 
 
 class ManoVisualizer:
-    ''' Responsible ONLY for drawing the hand mesh using Open3D. '''
+    ''' Responsible ONLY for drawing the hand meshes using Open3D. '''
 
-    def __init__(self, initial_vertices: np.ndarray, faces: np.ndarray):
+    def __init__(self, 
+                 left_initial_vertices:  np.ndarray, left_faces:  np.ndarray,
+                 right_initial_vertices: np.ndarray, right_faces: np.ndarray):
+        
         # Open3D Setup
         self.vis = o3d.visualization.Visualizer()
-        self.vis.create_window(window_name = 'MANO 3D Hand', width = 800, height = 600)
+        self.vis.create_window(window_name = 'MANO 3D Hands', width = 800, height = 600)
         
-        # Initialize an Open3D TriangleMesh
-        self.mesh           = o3d.geometry.TriangleMesh()
-        self.mesh.vertices  = o3d.utility.Vector3dVector(initial_vertices)
-        self.mesh.triangles = o3d.utility.Vector3iVector(faces) # Faces remain constant!
-        self.mesh.compute_vertex_normals()
-        self.mesh.paint_uniform_color([0.7, 0.7, 0.7])
-
-        # Add the mesh to the visualizer
-        self.vis.add_geometry(self.mesh)
+        self.left_mesh  = self._create_hand_mesh(left_initial_vertices,  left_faces,  color = [0.7, 0.6, 0.6])
+        self.right_mesh = self._create_hand_mesh(right_initial_vertices, right_faces, color = [0.6, 0.6, 0.7])
+        
+        # Add the meshes to the visualizer
+        self.vis.add_geometry(self.left_mesh)
+        self.vis.add_geometry(self.right_mesh)
 
         # Set the "up" direction to be along the negative Y-axis...
         view_control = self.vis.get_view_control()
@@ -117,13 +117,30 @@ class ManoVisualizer:
 
         return;
 
-    def render(self, vertices: np.ndarray) -> None:
-        ''' Just updates the mesh and draws it. '''
+    def _create_hand_mesh(self, vertices: np.ndarray, faces: np.ndarray, color: list) -> o3d.geometry.TriangleMesh:
+        ''' Helper method to initialize a single Open3D TriangleMesh. '''
 
-        self.mesh.vertices = o3d.utility.Vector3dVector(vertices)
-        self.mesh.compute_vertex_normals()
+        mesh           = o3d.geometry.TriangleMesh()
+        mesh.vertices  = o3d.utility.Vector3dVector(vertices)
+        mesh.triangles = o3d.utility.Vector3iVector(faces) # Faces remain constant!
+        mesh.compute_vertex_normals()
+        mesh.paint_uniform_color(color)
+        
+        return mesh;
 
-        self.vis.update_geometry(self.mesh)
+    def render(self, left_vertices: np.ndarray, right_vertices: np.ndarray) -> None:
+        ''' Just updates the meshes and draws it. '''
+
+        # Update Left Hand
+        self.left_mesh.vertices = o3d.utility.Vector3dVector(left_vertices)
+        self.left_mesh.compute_vertex_normals()
+        self.vis.update_geometry(self.left_mesh)
+
+        # Update Right Hand
+        self.right_mesh.vertices = o3d.utility.Vector3dVector(right_vertices)
+        self.right_mesh.compute_vertex_normals()
+        self.vis.update_geometry(self.right_mesh)
+
         self.vis.update_renderer() # Re-render Open3D
 
         return;
@@ -136,10 +153,18 @@ def main(window_title: str = 'Testing MANO') -> None:
     if not cap.isOpened(): raise RuntimeError('Could not open webcam.');
 
     hand_calculator = Hand3D()
+
     hand_mano_left  = ManoHand(MANO_MODEL_PATH)
+    hand_mano_right = ManoHand(MANO_MODEL_PATH_RIGHT)
+
+    current_left_vertices  = hand_mano_left.initial_vertices
+    current_right_vertices = hand_mano_right.initial_vertices
+
     mano_visualizer = ManoVisualizer(
-        hand_mano_left.initial_vertices,
-        hand_mano_left.kinematic_model.faces
+        left_initial_vertices  = current_left_vertices,
+        left_faces             = hand_mano_left.kinematic_model.faces,
+        right_initial_vertices = current_right_vertices,
+        right_faces            = hand_mano_right.kinematic_model.faces
     )
 
     with HandTracker(model_path) as tracker: 
@@ -156,13 +181,18 @@ def main(window_title: str = 'Testing MANO') -> None:
             (hands_data, anchors_data) = hand_calculator.get_3d_coordinates(tracker.latest_result)
             
             if hands_data and tracker.latest_result:
-                # - Note: Because of the flipping (Selfie mode), the handedness is reversed...
-                # As a result, the right hand uses the left MANO model and the left hand uses the right MANO model!
-                handedness_label = reverse_handedness(tracker.latest_result.handedness[0][0].category_name)
+                for (i, hand_data) in enumerate(hands_data):
+                    handedness_label = tracker.latest_result.handedness[i][0].category_name
 
-                (vertices, _) = hand_mano_left.solve(hands_data)
-                
-                if vertices is not None: mano_visualizer.render(vertices)
+                    if handedness_label == 'Left':
+                        (vertices, _) = hand_mano_left.solve(hand_data)
+                        if vertices is not None: current_left_vertices = vertices
+                    
+                    elif handedness_label == 'Right':
+                        (vertices, _) = hand_mano_right.solve(hand_data)
+                        if vertices is not None: current_right_vertices = vertices
+            
+            mano_visualizer.render(current_left_vertices, current_right_vertices)
 
             cv2.imshow(window_title, frame)
             
