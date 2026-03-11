@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from MANOkinematics.smoother import OneEuroFilter
 
-from mediapipeHLD import (HandTracker, model_path, mp_hands)
+from hand_engine import (HandTracker, model_path, mp_hands)
 
 from typing import TypeAlias
 from numpy.typing import NDArray
