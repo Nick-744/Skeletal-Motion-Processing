@@ -182,15 +182,29 @@ def main(window_title: str = 'Testing MANO') -> None:
             
             if hands_data and tracker.latest_result:
                 for (i, hand_data) in enumerate(hands_data):
-                    handedness_label = tracker.latest_result.handedness[i][0].category_name
+                    try:
+                        handedness_label = tracker.latest_result.handedness[i][0].category_name
+                    except IndexError:
+                        handedness_label = 'Unknown'
+
+                    raw_x = anchors_data[i][0][0]
+                    raw_y = anchors_data[i][1][0]
+                    raw_z = anchors_data[i][2][0]
+
+                    # Process the raw anchor data...
+                    anchor_point = np.array([
+                        (raw_x - 0.5) * 0.6,
+                        (raw_y - 0.5) * 0.6,
+                        (raw_z - 0.5) * 0.2
+                    ])
 
                     if handedness_label == 'Left':
                         (vertices, _) = hand_mano_left.solve(hand_data)
-                        if vertices is not None: current_left_vertices = vertices
+                        if vertices is not None: current_left_vertices = vertices + anchor_point
                     
                     elif handedness_label == 'Right':
                         (vertices, _) = hand_mano_right.solve(hand_data)
-                        if vertices is not None: current_right_vertices = vertices
+                        if vertices is not None: current_right_vertices = vertices + anchor_point
             
             mano_visualizer.render(current_left_vertices, current_right_vertices)
 
