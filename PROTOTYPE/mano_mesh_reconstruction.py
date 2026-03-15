@@ -8,7 +8,7 @@ from MANOkinematics.models import KinematicModel
 from MANOkinematics.armatures import MANOArmature
 from MANOkinematics.config import (MANO_MODEL_PATH, MANO_MODEL_PATH_RIGHT)
 
-from hand_engine import (HandTracker, reverse_handedness, model_path)
+from hand_engine import (HandTracker, model_path)
 from hand_kinematics_3D import (Hand3D, HandDataRaw)
 
 import os
@@ -193,9 +193,9 @@ def main(window_title: str = 'Testing MANO') -> None:
 
                     # Process the raw anchor data...
                     anchor_point = np.array([
-                        (raw_x - 0.5) * 0.6,
-                        (raw_y - 0.5) * 0.6,
-                        (raw_z - 0.5) * 0.2
+                        ( raw_x - 0.5) * 0.6,
+                        ( raw_y - 0.5) * 0.6,
+                        (-raw_z + 0.5) * 0.12 + 0.3
                     ])
 
                     if handedness_label == 'Left':
