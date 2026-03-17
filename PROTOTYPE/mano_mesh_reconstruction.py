@@ -99,8 +99,13 @@ class ManoVisualizer:
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window(window_name = 'MANO 3D Hands', width = 800, height = 600)
         
-        self.left_mesh  = self._create_hand_mesh(left_initial_vertices,  left_faces,  color = [0.7, 0.6, 0.6])
-        self.right_mesh = self._create_hand_mesh(right_initial_vertices, right_faces, color = [0.6, 0.6, 0.7])
+        self.left_mesh  = self._create_hand_mesh(left_initial_vertices,  left_faces,  color = [0.8, 0.6, 0.6])
+        self.right_mesh = self._create_hand_mesh(right_initial_vertices, right_faces, color = [0.6, 0.6, 0.8])
+
+        # The x, y, z axis will be rendered as red, green, and blue arrows respectively
+        self.axis_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size = 0.15, origin = [0, 0, 0])
+        self.vis.add_geometry(self.axis_frame)
+        # x right - y down - z into the screen
         
         # Add the meshes to the visualizer
         self.vis.add_geometry(self.left_mesh)
