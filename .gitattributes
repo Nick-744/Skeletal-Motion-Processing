@@ -3,6 +3,23 @@
 
 
 
+##################################################
+
+
+
+## Unity YAML handling ##
+*.unity text eol=lf
+*.prefab text eol=lf
+*.asset text eol=lf
+*.meta text eol=lf
+*.mat text eol=lf
+
+
+
+##################################################
+
+
+
 #
 # This file contains rules that control how Git handles binary and text files, including line endings
 #
