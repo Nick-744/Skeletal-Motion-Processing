@@ -11,12 +11,20 @@ public class ManoLiveReceiver : MonoBehaviour
     public int port = 5052;
 
     [Header("Left Hand Bones (drives RIGHT hand skeleton)")]
+    public Transform leftHandRoot;
     [Tooltip("Order: 0:Wrist, 1-3:Index, 4-6:Middle, 7-9:Pinky, 10-12:Ring, 13-15:Thumb")]
-    public Transform[] leftBones = new Transform[16];
+    public Transform[] leftBones     = new Transform[16];
+    public string currentLeftGesture = "None";
 
     [Header("Right Hand Bones (drives LEFT hand skeleton)")]
+    public Transform rightHandRoot;
     [Tooltip("Order: 0:Wrist, 1-3:Index, 4-6:Middle, 7-9:Pinky, 10-12:Ring, 13-15:Thumb")]
-    public Transform[] rightBones = new Transform[16];
+    public Transform[] rightBones     = new Transform[16];
+    public string currentRightGesture = "None";
+
+    [Header("Anchor Settings")]
+    [Tooltip("Scale/flip axes")]
+    public Vector3 anchorMultiplier = new Vector3(0.01f, 0.01f, -0.005f);
 
     private Thread receiveThread;
     private UdpClient client;
@@ -28,6 +36,12 @@ public class ManoLiveReceiver : MonoBehaviour
     {
         public float[][] left_pose  { get; set; }
         public float[][] right_pose { get; set; }
+
+        public string left_gesture  { get; set; }
+        public string right_gesture { get; set; }
+
+        public float[] left_anchor  { get; set; }
+        public float[] right_anchor { get; set; }
     }
 
     void Start()
@@ -73,9 +87,17 @@ public class ManoLiveReceiver : MonoBehaviour
         {
             ManoPayload payload = JsonConvert.DeserializeObject<ManoPayload>(currentJson);
 
-            if (payload.left_pose != null)  ApplyPose(leftBones, payload.left_pose);
-            
+            // Apply Poses
+            if (payload.left_pose  != null) ApplyPose(leftBones,  payload.left_pose);
             if (payload.right_pose != null) ApplyPose(rightBones, payload.right_pose);
+
+            // Update Gestures
+            if (payload.left_gesture  != null) currentLeftGesture  = payload.left_gesture;
+            if (payload.right_gesture != null) currentRightGesture = payload.right_gesture;
+
+            // Apply Anchors
+            if (payload.left_anchor  != null && leftHandRoot  != null) ApplyAnchor(leftHandRoot,  payload.left_anchor);
+            if (payload.right_anchor != null && rightHandRoot != null) ApplyAnchor(rightHandRoot, payload.right_anchor);
         }
         catch (System.Exception e) { Debug.LogError($"Error parsing JSON: {e.Message}"); }
     }
@@ -112,6 +134,18 @@ public class ManoLiveReceiver : MonoBehaviour
             
             Quaternion rotation    = Quaternion.AngleAxis(angleDeg, axis);
             bones[i].localRotation = rotation;
+        }
+    }
+
+    private void ApplyAnchor(Transform root, float[] anchorData)
+    {
+        if (anchorData.Length >= 3)
+        {
+            float x = anchorData[0] * anchorMultiplier.x;
+            float y = anchorData[1] * anchorMultiplier.y;
+            float z = anchorData[2] * anchorMultiplier.z;
+
+            root.localPosition = new Vector3(x, y, z);
         }
     }
 

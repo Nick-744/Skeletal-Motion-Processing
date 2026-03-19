@@ -129,25 +129,15 @@ def reverse_handedness(handedness: str) -> str:
 def render_gesture_result(frame: 'cv2.Mat', gesture_result: GestureRecognizerResult) -> None:
     ''' Render gesture recognition results on frame in-place. '''
 
-    if gesture_result.gestures:
-        gesture_name = gesture_result.gestures[0][0].category_name
-        handedness   = gesture_result.handedness[0][0].category_name
+    for (i, _) in enumerate(gesture_result.gestures):
+        gesture_name = gesture_result.gestures[i][0].category_name
+        handedness   = gesture_result.handedness[i][0].category_name
         cv2.putText(
             frame, f'{reverse_handedness(handedness)}: {gesture_name}',
-            (15, 80),
+            (15, 80 + i * 40),
             cv2.FONT_HERSHEY_SIMPLEX,
             1, (255, 0, 0), 2
         )
-
-        if len(gesture_result.gestures) > 1:
-            gesture_name = gesture_result.gestures[1][0].category_name
-            handedness   = gesture_result.handedness[1][0].category_name
-            cv2.putText(
-                frame, f'{reverse_handedness(handedness)}: {gesture_name}',
-                (15, 120),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1, (255, 0, 0), 2
-            )
 
     return;
 

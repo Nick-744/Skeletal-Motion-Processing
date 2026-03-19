@@ -43,7 +43,13 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
             # Dictionary to hold the data for this frame
             frame_payload = {
                 'left_pose':  None,
-                'right_pose': None
+                'right_pose': None,
+
+                'left_gesture':  None,
+                'right_gesture': None,
+
+                'left_anchor':  None,
+                'right_anchor': None
             }
 
             if hands_data and tracker.latest_result:
@@ -52,14 +58,29 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
                         handedness_label = tracker.latest_result.handedness[i][0].category_name
                     except IndexError:
                         handedness_label = 'Unknown'
+                    
+                    try:
+                        gesture_name = tracker.latest_result.gestures[i][0].category_name
+                    except IndexError:
+                        gesture_name = 'Unknown'
 
                     if handedness_label == 'Left':
                         (_, pose_abs) = hand_mano_left.solve(hand_data)
                         if pose_abs is not None: frame_payload['left_pose'] = pose_abs.tolist()
+
+                        frame_payload['left_gesture'] = gesture_name
+
+                        (ax, ay, az) = anchors_data[i]
+                        frame_payload['left_anchor'] = [float(ax[0]), float(ay[0]), float(az[0])]
                     
                     elif handedness_label == 'Right':
                         (_, pose_abs) = hand_mano_right.solve(hand_data)
                         if pose_abs is not None: frame_payload['right_pose'] = pose_abs.tolist()
+                        
+                        frame_payload['right_gesture'] = gesture_name
+
+                        (ax, ay, az) = anchors_data[i]
+                        frame_payload['right_anchor'] = [float(ax[0]), float(ay[0]), float(az[0])]
             
             # Send data to Unity if at least one hand was detected
             if frame_payload['left_pose'] or frame_payload['right_pose']:
