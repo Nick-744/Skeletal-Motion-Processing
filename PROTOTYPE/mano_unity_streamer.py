@@ -27,6 +27,11 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
     hand_mano_left  = ManoHand(MANO_MODEL_PATH)
     hand_mano_right = ManoHand(MANO_MODEL_PATH_RIGHT)
 
+    solvers = {
+        'left':  hand_mano_left,
+        'right': hand_mano_right
+    }
+
     print(f'\n-> Streaming MANO poses to Unity on {UDP_IP}:{UDP_PORT}...\n')
 
     with HandTracker(model_path) as tracker: 
@@ -56,31 +61,22 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
                 for (i, hand_data) in enumerate(hands_data):
                     try:
                         handedness_label = tracker.latest_result.handedness[i][0].category_name
+                        handedness_label = handedness_label.lower()
                     except IndexError:
-                        handedness_label = 'Unknown'
+                        continue;
                     
                     try:
                         gesture_name = tracker.latest_result.gestures[i][0].category_name
                     except IndexError:
-                        gesture_name = 'Unknown'
-
-                    if handedness_label == 'Left':
-                        (_, pose_abs) = hand_mano_left.solve(hand_data)
-                        if pose_abs is not None: frame_payload['left_pose'] = pose_abs.tolist()
-
-                        frame_payload['left_gesture'] = gesture_name
-
-                        (ax, ay, az) = anchors_data[i]
-                        frame_payload['left_anchor'] = [float(ax[0]), float(ay[0]), float(az[0])]
+                        continue;
                     
-                    elif handedness_label == 'Right':
-                        (_, pose_abs) = hand_mano_right.solve(hand_data)
-                        if pose_abs is not None: frame_payload['right_pose'] = pose_abs.tolist()
-                        
-                        frame_payload['right_gesture'] = gesture_name
+                    (_, pose_abs) = solvers[handedness_label].solve(hand_data)
+                    if pose_abs is not None: frame_payload[f'{handedness_label}_pose'] = pose_abs.tolist()
 
-                        (ax, ay, az) = anchors_data[i]
-                        frame_payload['right_anchor'] = [float(ax[0]), float(ay[0]), float(az[0])]
+                    frame_payload[f'{handedness_label}_gesture'] = gesture_name
+
+                    (ax, ay, az) = anchors_data[i]
+                    frame_payload[f'{handedness_label}_anchor'] = [float(ax[0]), float(ay[0]), float(az[0])]
             
             # Send data to Unity if at least one hand was detected
             if frame_payload['left_pose'] or frame_payload['right_pose']:
