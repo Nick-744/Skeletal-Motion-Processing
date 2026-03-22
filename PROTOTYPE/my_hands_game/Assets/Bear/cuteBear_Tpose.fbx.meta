@@ -3,7 +3,27 @@ guid: 03cba8eee4a39a5499293765baede9dd
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.012
+    second: {fileID: 2100000, guid: 92e5417a1bc7698428c04906c37b5ff9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Nose.002
+    second: {fileID: 2100000, guid: 2230d420066ea474892de47721bde814, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: eyes
+    second: {fileID: 2100000, guid: 2d3a2ebfed005614abba9bfb5e488410, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: fabric_brown
+    second: {fileID: 2100000, guid: da3d69733e5fa9c42b2e6153bf8dadf8, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
