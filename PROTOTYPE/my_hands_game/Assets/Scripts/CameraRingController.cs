@@ -46,13 +46,9 @@ public class CameraRingController : MonoBehaviour
 
         // Determine movement based on gesture combinations
         if (left == "Pointing_Up" && right == "Closed_Fist")
-        {
             currentAngle += moveSpeed * Time.deltaTime;
-        }
         else if (left == "Closed_Fist" && right == "Pointing_Up")
-        {
             currentAngle -= moveSpeed * Time.deltaTime;
-        }
         float angleRad = currentAngle * Mathf.Deg2Rad;
 
         // Apply trigonometric formula for a circle on the X/Z plane

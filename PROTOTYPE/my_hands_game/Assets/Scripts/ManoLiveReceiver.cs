@@ -46,10 +46,8 @@ public class ManoLiveReceiver : MonoBehaviour
 
     void Start()
     {
-        receiveThread = new Thread(new ThreadStart(ReceiveData))
-        {
-            IsBackground = true
-        };
+        receiveThread = new Thread(new ThreadStart(ReceiveData)) { IsBackground = true };
+
         receiveThread.Start();
         Debug.Log($"Listening for MANO data on port {port}...");
     }
