@@ -5,6 +5,8 @@ DRAFT/~$IDEAS.docx
 **/MANO_RIGHT.pkl
 **/hand_landmarker.task
 **/gesture_recognizer.task
+**/pose_landmarker_full.task
+**/pose_landmarker_heavy.task
 **/.vs/
 
 
