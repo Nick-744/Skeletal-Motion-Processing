@@ -7,15 +7,13 @@ from pose_engine import (PoseTracker, model_path)
 
 from typing import TypeAlias
 from numpy.typing import NDArray
-PoseDataRaw:      TypeAlias = list[tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]]
-PoseDataCombined: TypeAlias = NDArray[np.float64]
+PoseDataRaw: TypeAlias = list[tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]]
 
 
 
 class Pose3D:
     def __init__(self, mincutoff: float = 2.0, beta: float = 0.05):
-        self.pose_filters   = OneEuroFilter(mincutoff = mincutoff, beta = beta)
-        self.anchor_filters = OneEuroFilter(mincutoff = mincutoff, beta = beta)
+        self.pose_filters = OneEuroFilter(mincutoff = mincutoff, beta = beta)
 
         # Filter (Data Reduction)
         self.target_indices = [
@@ -23,61 +21,47 @@ class Pose3D:
             7,  # Head - left ear
             8,  # Head - right ear
             11, # ArmL - left shoulder
-            15, # ArmL - left wrist
+            13, # ArmL - left elbow
             12, # ArmR - right shoulder
-            16, # ArmR - right wrist
+            14, # ArmR - right elbow
             23, # LegL - left hip
-            27, # LegL - left ankle
+            25, # LegL - left knee
             24, # LegR - right hip
-            28  # LegR - right ankle
+            26  # LegR - right knee
         ]
 
         return;
 
     def get_3d_coordinates(self,
-        result: PoseTracker.latest_result) -> tuple[PoseDataRaw, PoseDataRaw]:
+        result: PoseTracker.latest_result) -> PoseDataRaw:
         '''
         Transforms MediaPipe's pose landmarks into 3D coordinates.
-
-        Returns (poses_data, anchors_data) where each entry is a tuple of numpy arrays.
-        Combine with: np.add(poses_data, anchors_data)!
+        
+        Returns
+        -------
+        A list of 1 tuple containing 3 numpy arrays (xs, ys, zs)
+        for the 11 target landmarks in world coordinates.
         '''
 
-        poses_data   = []
-        anchors_data = []
+        poses_data = []
 
-        if (not result) or (not result.pose_landmarks): return (poses_data, anchors_data);
+        if (not result) or (not result.pose_landmarks): return poses_data;
 
-        # Loop through detected poses
+        # Grab ONLY the first person (index 0)...
         # - Note: result.pose_world_landmarks contains the accurate metric shapes!
-        for (i, world_landmarks) in enumerate(result.pose_world_landmarks):
-            screen_landmarks = result.pose_landmarks[i]
-            n     = len(self.target_indices)
-            scale = 2.0
+        world_landmarks = result.pose_world_landmarks[0]
 
-            # Pose shape in World Coordinates (only the 11 target points)...
-            raw_coords      = np.array([
-                [world_landmarks[idx].x, world_landmarks[idx].y, world_landmarks[idx].z]
-                for idx in self.target_indices
-            ]) * scale
-            filtered_coords = self.pose_filters[i].process(raw_coords)
-            (xw, yw, zw)    = (filtered_coords[:, 0], filtered_coords[:, 1], filtered_coords[:, 2])
+        # Pose shape in World Coordinates (only the 11 target points)...
+        raw_coords      = np.array([
+            [world_landmarks[idx].x, world_landmarks[idx].y, world_landmarks[idx].z]
+            for idx in self.target_indices
+        ])
+        filtered_coords = self.pose_filters.process(raw_coords)
+        (xw, yw, zw)    = (filtered_coords[:, 0], filtered_coords[:, 1], filtered_coords[:, 2])
 
-            # Define the anchor (Mid Hip - average of left and right hip)
-            (hip_l, hip_r) = (screen_landmarks[23], screen_landmarks[24])
-            raw_anchor = np.array([
-                (hip_l.x + hip_r.x) / 2.0,
-                (hip_l.y + hip_r.y) / 2.0,
-                self._estimate_scale(screen_landmarks, world_landmarks)
-            ])
-            filtered_anchor = self.anchor_filters[i].process(raw_anchor)
-            (fax, fay, faz) = filtered_anchor
-            (ax, ay, az)    = (np.full(n, fax), np.full(n, fay), np.full(n, faz))
+        poses_data.append((xw, yw, zw))
 
-            poses_data.append((xw, yw, zw))
-            anchors_data.append((ax, ay, az))
-
-        return (poses_data, anchors_data);
+        return poses_data;
 
     def _estimate_scale(self, screen_lms, world_lms) -> float:
         '''
@@ -125,10 +109,10 @@ class PoseVisualizer3D:
             (0, 1), (0, 2), (1, 2),
 
             # Limbs
-            (3, 4), # Left Arm  (Shoulder -> Wrist)
-            (5, 6), # Right Arm (Shoulder -> Wrist)
-            (7, 8), # Left Leg  (Hip -> Ankle)
-            (9, 10) # Right Leg (Hip -> Ankle)
+            (3, 4), # Left Arm  (Shoulder -> Elbow)
+            (5, 6), # Right Arm (Shoulder -> Elbow)
+            (7, 8), # Left Leg  (Hip -> Knee)
+            (9, 10) # Right Leg (Hip -> Knee)
         ]
         
         plt.ion() # Interactive mode
@@ -160,9 +144,9 @@ class PoseVisualizer3D:
         self.ax.view_init(elev = -90, azim = -90)
 
         # Axis Limits
-        self.ax.set_xlim(0, 1)
-        self.ax.set_ylim(0, 1)
-        self.ax.set_zlim(0, 4) # Trial-and-error range...
+        self.ax.set_xlim(-0.5, 0.5)
+        self.ax.set_ylim(-0.5, 0.5)
+        self.ax.set_zlim(-0.5, 0.5)
 
         # Equal axis lengths
         self.ax.set_box_aspect([1, 1, 1])
@@ -179,11 +163,11 @@ class PoseVisualizer3D:
 
         return;
 
-    def update(self, poses_data: PoseDataCombined) -> None:
+    def update(self, poses_data: PoseDataRaw) -> None:
         ''' Updates the plot with new landmark data. '''
         
         # If no result, clear the plot...
-        if poses_data.size == 0:
+        if len(poses_data) == 0:
             self._clear_plot()
             return;
 
@@ -249,7 +233,7 @@ def main():
             frame  = cv2.flip(frame, 1)
             tracker.detect(frame)
             result = pose_calculator.get_3d_coordinates(tracker.latest_result)
-            visualizer.update(np.add(result[0], result[1]))
+            visualizer.update(result)
 
     cap.release()
     cv2.destroyAllWindows()
