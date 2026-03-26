@@ -13,6 +13,8 @@ public class BearInteraction : MonoBehaviour
     [Header("Bear Armature")]
     public Transform leftShoulder;
     public Transform rightShoulder;
+    public Transform leftLeg;
+    public Transform rightLeg;
 
     [Header("Interaction Settings")]
     public string waveGesture         = "Thumb_Up";
@@ -28,12 +30,19 @@ public class BearInteraction : MonoBehaviour
 
     [Header("Walk & Navigation Settings")]
     public float walkSpeed         = 1.0f;
-    public float rotationSpeed     = 6f;
-    public float walkBounceHeight  = 0.15f;
+    public float rotationSpeed     = 5f;
+    public float walkBounceHeight  = 0.05f;
     public float walkArmSwingAngle = 40f;
+    public float walkStepFrequency = 6f;
+    public float walkSwayAngle     = 4f; // Side-to-side waddle angle
+    public float walkLegSwingAngle = 35f;
+
+    public float walkingHeightOffset = 95f; // How much should be above the ground
 
     private Quaternion leftStartRot;
     private Quaternion rightStartRot;
+    private Quaternion leftLegStartRot;
+    private Quaternion rightLegStartRot;
 
     private Vector3 targetPosition;
     private bool isWalking = false;
@@ -43,6 +52,9 @@ public class BearInteraction : MonoBehaviour
         // Save default T-pose rotations
         if (leftShoulder  != null) leftStartRot  = leftShoulder.localRotation;
         if (rightShoulder != null) rightStartRot = rightShoulder.localRotation;
+
+        if (leftLeg  != null) leftLegStartRot  = leftLeg.localRotation;
+        if (rightLeg != null) rightLegStartRot = rightLeg.localRotation;
 
         // Hide the bubble
         if (dialogueBubble != null) dialogueBubble.SetActive(false);
@@ -62,8 +74,10 @@ public class BearInteraction : MonoBehaviour
         }
 
         // Movement and Animation Logic
-        Quaternion leftTarget  = leftStartRot;
-        Quaternion rightTarget = rightStartRot;
+        Quaternion leftArmTarget  = leftStartRot;
+        Quaternion rightArmTarget = rightStartRot;
+        Quaternion leftLegTarget  = leftLegStartRot;
+        Quaternion rightLegTarget = rightLegStartRot;
 
         if (isWalking)
         {
@@ -72,11 +86,16 @@ public class BearInteraction : MonoBehaviour
 
             if (moveDir.magnitude > 0.2f)
             {
-                // Rotate to face target
+                float cycleTime = Time.time * walkStepFrequency; // Synchronized time
+
+                // Rotate to face target + natural side-to-side sway
                 if (moveDir != Vector3.zero)
                 {
-                    Quaternion targetRotation = Quaternion.LookRotation(moveDir);
-                    transform.rotation        = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+                    Quaternion baseLookRot = Quaternion.LookRotation(moveDir);
+                    float swayZ            = Mathf.Cos(cycleTime) * walkSwayAngle;
+                    Quaternion swayRot     = Quaternion.Euler(0, 0, swayZ);
+
+                    transform.rotation = Quaternion.Slerp(transform.rotation, baseLookRot * swayRot, Time.deltaTime * rotationSpeed);
                 }
 
                 // Move forward
@@ -84,19 +103,32 @@ public class BearInteraction : MonoBehaviour
                 Vector3 nextPos       = Vector3.MoveTowards(transform.position, targetPosFlat, walkSpeed * Time.deltaTime);
 
                 // Surface snapping
-                if (Physics.Raycast(nextPos + Vector3.up * 5f, Vector3.down, out RaycastHit groundHit, 20f))
+                if (Physics.Raycast(nextPos + Vector3.up * walkingHeightOffset, Vector3.down, out RaycastHit groundHit, 20f))
                 {
-                    float bobY         = groundHit.point.y + Mathf.Abs(Mathf.Sin(Time.time * walkSpeed)) * walkBounceHeight;
+                    float bobY         = groundHit.point.y + Mathf.Abs(Mathf.Sin(cycleTime)) * walkBounceHeight;
                     transform.position = new Vector3(nextPos.x, bobY, nextPos.z);
                 }
                 else transform.position = nextPos;
 
                 // Arm swing animation
-                float armSwing = Mathf.Sin(Time.time * walkSpeed) * walkArmSwingAngle;
-                leftTarget     = leftStartRot  * Quaternion.Euler( armSwing, 0, 0);
-                rightTarget    = rightStartRot * Quaternion.Euler(-armSwing, 0, 0);
+                float armSwing = Mathf.Sin(cycleTime) * walkArmSwingAngle;
+                leftArmTarget  = leftStartRot  * Quaternion.Euler( armSwing, 0, 0);
+                rightArmTarget = rightStartRot * Quaternion.Euler(-armSwing, 0, 0);
+
+                // Leg swing animation
+                float legSwing = Mathf.Sin(cycleTime) * walkLegSwingAngle;
+                leftLegTarget  = leftLegStartRot  * Quaternion.Euler(-legSwing, 0, 0);
+                rightLegTarget = rightLegStartRot * Quaternion.Euler( legSwing, 0, 0);
             }
-            else isWalking = false;
+            else
+            {
+                isWalking = false;
+
+                // Reset upright rotation when stopping
+                Vector3 flatEuler  = transform.rotation.eulerAngles;
+                flatEuler.z        = 0;
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(flatEuler), Time.deltaTime * rotationSpeed);
+            }
         }
         else
         {
@@ -105,19 +137,19 @@ public class BearInteraction : MonoBehaviour
             // Check left + right hands independently (from the bear's perspective!)
             bool isLeftWaving  = (manoReceiver.currentLeftGesture  == waveGesture);
             bool isRightWaving = (manoReceiver.currentRightGesture == waveGesture);
-            
+
             float waveOffset = Mathf.Sin(Time.time * waveSpeed) * waveAngle;
 
             if (isLeftWaving)
             {
                 Vector3 wavingRotation = leftArmUpRotation + new Vector3(0, 0, waveOffset);
-                leftTarget             = leftStartRot * Quaternion.Euler(wavingRotation);
+                leftArmTarget          = leftStartRot * Quaternion.Euler(wavingRotation);
             }
 
             if (isRightWaving)
             {
                 Vector3 wavingRotation = rightArmUpRotation + new Vector3(0, 0, -waveOffset);
-                rightTarget            = rightStartRot * Quaternion.Euler(wavingRotation);
+                rightArmTarget         = rightStartRot * Quaternion.Euler(wavingRotation);
             }
 
             if (dialogueBubble != null) dialogueBubble.SetActive(isLeftWaving || isRightWaving);
@@ -125,9 +157,16 @@ public class BearInteraction : MonoBehaviour
 
         // Apply arm rotations
         if (leftShoulder != null)
-            leftShoulder.localRotation = Quaternion.Slerp(leftShoulder.localRotation, leftTarget, Time.deltaTime * animationSpeed);
+            leftShoulder.localRotation = Quaternion.Slerp(leftShoulder.localRotation, leftArmTarget, Time.deltaTime * animationSpeed);
 
         if (rightShoulder != null)
-            rightShoulder.localRotation = Quaternion.Slerp(rightShoulder.localRotation, rightTarget, Time.deltaTime * animationSpeed);
+            rightShoulder.localRotation = Quaternion.Slerp(rightShoulder.localRotation, rightArmTarget, Time.deltaTime * animationSpeed);
+
+        // Apply leg rotations
+        if (leftLeg != null)
+            leftLeg.localRotation = Quaternion.Slerp(leftLeg.localRotation, leftLegTarget, Time.deltaTime * animationSpeed);
+
+        if (rightLeg != null)
+            rightLeg.localRotation = Quaternion.Slerp(rightLeg.localRotation, rightLegTarget, Time.deltaTime * animationSpeed);
     }
 }

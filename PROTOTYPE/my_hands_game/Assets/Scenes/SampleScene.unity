@@ -124,6 +124,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7741994883780204013, guid: adfab5f2ceddb7548a3ec5b60f6dc29c, type: 3}
   m_PrefabInstance: {fileID: 2015606485}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &33477717 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1719050464394173271, guid: 03cba8eee4a39a5499293765baede9dd, type: 3}
+  m_PrefabInstance: {fileID: 1712222893}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &87745174 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -3950096443363799905, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}
@@ -652,6 +657,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -5615281559999492292, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}
   m_PrefabInstance: {fileID: 1602610808}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &649729272 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4763934434074746780, guid: 03cba8eee4a39a5499293765baede9dd, type: 3}
+  m_PrefabInstance: {fileID: 1712222893}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &813331276 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -3114496631479551819, guid: adfab5f2ceddb7548a3ec5b60f6dc29c, type: 3}
@@ -857,6 +867,8 @@ MonoBehaviour:
   dialogueBubble: {fileID: 1429340325}
   leftShoulder: {fileID: 856123307}
   rightShoulder: {fileID: 1416417456}
+  leftLeg: {fileID: 649729272}
+  rightLeg: {fileID: 33477717}
   waveGesture: Thumb_Up
   leftArmUpRotation: {x: 0, y: 0, z: -30}
   rightArmUpRotation: {x: 0, y: 0, z: 30}
@@ -864,9 +876,12 @@ MonoBehaviour:
   waveSpeed: 12.5
   waveAngle: 40
   walkSpeed: 1
-  rotationSpeed: 6
-  walkBounceHeight: 0.15
+  rotationSpeed: 5
+  walkStepFrequency: 6
+  walkBounceHeight: 0.05
+  walkSwayAngle: 4
   walkArmSwingAngle: 40
+  walkLegSwingAngle: 40
 --- !u!4 &1296529600 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4854625529831889981, guid: adfab5f2ceddb7548a3ec5b60f6dc29c, type: 3}
