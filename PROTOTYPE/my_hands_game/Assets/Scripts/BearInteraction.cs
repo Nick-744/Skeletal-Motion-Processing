@@ -29,7 +29,7 @@ public class BearInteraction : MonoBehaviour
     public float waveAngle = 40f;
 
     [Header("Walk & Navigation Settings")]
-    public float walkSpeed         = 1.0f;
+    public float walkSpeed         = 0.8f;
     public float rotationSpeed     = 5f;
     public float walkBounceHeight  = 0.05f;
     public float walkArmSwingAngle = 40f;
@@ -112,13 +112,17 @@ public class BearInteraction : MonoBehaviour
 
                 // Arm swing animation
                 float armSwing = Mathf.Sin(cycleTime) * walkArmSwingAngle;
+                // The following order of operations applies the swing
+                // applies the swing in the bone's tilted local space.
                 leftArmTarget  = leftStartRot  * Quaternion.Euler( armSwing, 0, 0);
                 rightArmTarget = rightStartRot * Quaternion.Euler(-armSwing, 0, 0);
 
                 // Leg swing animation
                 float legSwing = Mathf.Sin(cycleTime) * walkLegSwingAngle;
-                leftLegTarget  = leftLegStartRot  * Quaternion.Euler(-legSwing, 0, 0);
-                rightLegTarget = rightLegStartRot * Quaternion.Euler( legSwing, 0, 0);
+                // The following order of operations applies the swing
+                // in the parent's straight coordinate space (the bear's body).
+                leftLegTarget  = Quaternion.Euler( legSwing, 0, 0) * leftLegStartRot;
+                rightLegTarget = Quaternion.Euler(-legSwing, 0, 0) * rightLegStartRot;
             }
             else
             {

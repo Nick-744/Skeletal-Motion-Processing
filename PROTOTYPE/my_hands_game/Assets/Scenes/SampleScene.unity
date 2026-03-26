@@ -875,13 +875,14 @@ MonoBehaviour:
   animationSpeed: 8
   waveSpeed: 12.5
   waveAngle: 40
-  walkSpeed: 1
+  walkSpeed: 0.8
   rotationSpeed: 5
-  walkStepFrequency: 6
   walkBounceHeight: 0.05
-  walkSwayAngle: 4
   walkArmSwingAngle: 40
-  walkLegSwingAngle: 40
+  walkStepFrequency: 6
+  walkSwayAngle: 4
+  walkLegSwingAngle: 35
+  walkingHeightOffset: 95
 --- !u!4 &1296529600 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4854625529831889981, guid: adfab5f2ceddb7548a3ec5b60f6dc29c, type: 3}
