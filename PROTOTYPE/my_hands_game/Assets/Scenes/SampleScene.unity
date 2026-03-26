@@ -853,20 +853,52 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BearInteraction
   manoReceiver: {fileID: 968769119}
+  handPointer: {fileID: 2131803162}
   dialogueBubble: {fileID: 1429340325}
   leftShoulder: {fileID: 856123307}
   rightShoulder: {fileID: 1416417456}
-  targetGesture: Thumb_Up
+  waveGesture: Thumb_Up
   leftArmUpRotation: {x: 0, y: 0, z: -30}
   rightArmUpRotation: {x: 0, y: 0, z: 30}
   animationSpeed: 8
   waveSpeed: 12.5
   waveAngle: 40
+  walkSpeed: 1
+  rotationSpeed: 6
+  walkBounceHeight: 0.15
+  walkArmSwingAngle: 40
 --- !u!4 &1296529600 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4854625529831889981, guid: adfab5f2ceddb7548a3ec5b60f6dc29c, type: 3}
   m_PrefabInstance: {fileID: 2015606485}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1316440598 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8224101667920926014, guid: 094ae3913c7351f4884bad51b249a645, type: 3}
+  m_PrefabInstance: {fileID: 1746613338}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &1316440602
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1316440598}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -5115796548206632475, guid: 094ae3913c7351f4884bad51b249a645, type: 3}
 --- !u!4 &1343066424 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9142999232426491913, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}
@@ -1331,7 +1363,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8224101667920926014, guid: 094ae3913c7351f4884bad51b249a645, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1316440602}
   m_SourcePrefab: {fileID: 100100000, guid: 094ae3913c7351f4884bad51b249a645, type: 3}
 --- !u!4 &1794664186 stripped
 Transform:
@@ -1477,6 +1512,52 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -5444293107186102246, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}
   m_PrefabInstance: {fileID: 1602610808}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2131803160
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2131803161}
+  - component: {fileID: 2131803162}
+  m_Layer: 0
+  m_Name: HandController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2131803161
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2131803160}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.77577, y: -1.20452, z: -0.92974}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2131803162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2131803160}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e381e3e5dc8a6a46b8c51b1f3eb75fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HandPointer
+  manoReceiver: {fileID: 968769119}
+  confirmGesture: Victory
 --- !u!4 &2144884804 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5065651613772194828, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}
@@ -1496,3 +1577,4 @@ SceneRoots:
   - {fileID: 1429340329}
   - {fileID: 1510116642}
   - {fileID: 1746613338}
+  - {fileID: 2131803161}
