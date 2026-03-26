@@ -11,6 +11,7 @@ public class BearInteraction : MonoBehaviour
     public GameObject dialogueBubble;
 
     [Header("Bear Armature")]
+    public Transform head;
     public Transform leftShoulder;
     public Transform rightShoulder;
     public Transform leftLeg;
@@ -27,6 +28,8 @@ public class BearInteraction : MonoBehaviour
     public float waveSpeed = 12.5f;
     [Tooltip("How far the arm swings up and down during the wave.")]
     public float waveAngle = 40f;
+    [Tooltip("How much the head tilts when waving.")]
+    public float headTiltAngle = 10f;
 
     [Header("Walk & Navigation Settings")]
     public float walkSpeed         = 0.8f;
@@ -39,6 +42,7 @@ public class BearInteraction : MonoBehaviour
 
     public float walkingHeightOffset = 95f; // How much should be above the ground
 
+    private Quaternion headStartRot;
     private Quaternion leftStartRot;
     private Quaternion rightStartRot;
     private Quaternion leftLegStartRot;
@@ -50,6 +54,8 @@ public class BearInteraction : MonoBehaviour
     void Start()
     {
         // Save default T-pose rotations
+        if (head != null) headStartRot = head.localRotation;
+
         if (leftShoulder  != null) leftStartRot  = leftShoulder.localRotation;
         if (rightShoulder != null) rightStartRot = rightShoulder.localRotation;
 
@@ -74,6 +80,7 @@ public class BearInteraction : MonoBehaviour
         }
 
         // Movement and Animation Logic
+        Quaternion headTarget     = headStartRot;
         Quaternion leftArmTarget  = leftStartRot;
         Quaternion rightArmTarget = rightStartRot;
         Quaternion leftLegTarget  = leftLegStartRot;
@@ -148,16 +155,27 @@ public class BearInteraction : MonoBehaviour
             {
                 Vector3 wavingRotation = leftArmUpRotation + new Vector3(0, 0, waveOffset);
                 leftArmTarget          = leftStartRot * Quaternion.Euler(wavingRotation);
+
+                headTarget = headStartRot * Quaternion.Euler(0, 0, -headTiltAngle);
             }
 
             if (isRightWaving)
             {
                 Vector3 wavingRotation = rightArmUpRotation + new Vector3(0, 0, -waveOffset);
                 rightArmTarget         = rightStartRot * Quaternion.Euler(wavingRotation);
+
+                headTarget = headStartRot * Quaternion.Euler(0, 0, headTiltAngle);
             }
+
+            // If both hands are waving, reset head to neutral...
+            if (isLeftWaving && isRightWaving) headTarget = headStartRot;
 
             if (dialogueBubble != null) dialogueBubble.SetActive(isLeftWaving || isRightWaving);
         }
+
+        // Apply head rotation
+        if (head != null)
+            head.localRotation = Quaternion.Slerp(head.localRotation, headTarget, Time.deltaTime * animationSpeed);
 
         // Apply arm rotations
         if (leftShoulder != null)
