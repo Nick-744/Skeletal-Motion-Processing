@@ -18,6 +18,7 @@ public class BearInteraction : MonoBehaviour
     public Transform rightLeg;
 
     [Header("Interaction Settings")]
+    public bool isGrapplingMode       = false;
     public string waveGesture         = "Thumb_Up";
     public Vector3 leftArmUpRotation  = new Vector3(0, 0, -30f);
     public Vector3 rightArmUpRotation = new Vector3(0, 0,  30f);
@@ -71,6 +72,8 @@ public class BearInteraction : MonoBehaviour
     void Update()
     {
         if (manoReceiver == null || handPointer == null) return;
+
+        if (isGrapplingMode) return; // Grapple Controller
 
         // Check target from the hand pointer
         if (handPointer.IsConfirming && handPointer.HasValidTarget && !isWalking)

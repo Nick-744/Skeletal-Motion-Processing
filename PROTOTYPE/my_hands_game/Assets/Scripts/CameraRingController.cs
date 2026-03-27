@@ -12,7 +12,12 @@ public class CameraRingController : MonoBehaviour
     // How fast the camera moves around the ring
     public float moveSpeed = 100.0f;
 
-    // These will now be automatically calculated in Start()...
+    [Header("Grapple Camera Settings")]
+    public bool isGrapplingMode = false;
+    public Transform bearTransform;
+    public Vector3 thirdPersonOffset = new Vector3(0, 0.3f, -0.8f);
+
+    // These will be automatically calculated in Start()...
     private float radius;
     private float height;
     private float currentAngle;
@@ -39,6 +44,17 @@ public class CameraRingController : MonoBehaviour
     void Update()
     {
         if (manoReceiver == null) return; // Ensure we have the receiver linked
+
+        // Logic for 3rd person camera (GRAPPLING MODE)
+        if (isGrapplingMode && bearTransform != null)
+        {
+            Vector3 targetPosition = bearTransform.position + bearTransform.TransformDirection(thirdPersonOffset);
+            transform.position     = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 5f);
+
+            transform.LookAt(bearTransform.position + Vector3.up * 0.5f);
+
+            return; // Skip the ring logic
+        }
 
         // Fetch the current gestures
         string left  = manoReceiver.currentLeftGesture;
