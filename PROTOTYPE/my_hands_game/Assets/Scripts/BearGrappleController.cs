@@ -9,11 +9,19 @@ public class BearGrappleController : MonoBehaviour
     [Tooltip("Drag the Bear's root Transform here.")]
     public Transform bearRoot;
 
+    [Header("Armature Targets")]
+    [Tooltip("Drag the bear's Left Arm bone here.")]
+    public Transform leftArm;
+    [Tooltip("Drag the bear's Right Arm bone here.")]
+    public Transform rightArm;
+
     [Header("Settings")]
-    public bool isGrapplingMode = true;
+    public bool isGrapplingMode = false;
+    [Tooltip("Check this to render the balls for debugging.")]
+    public bool showDebugBalls  = false;
     public float ballSize       = 0.1f;
 
-    public Vector3 centerOffset = new Vector3(-0.5f, 1.0f, -1.0f);
+    public Vector3 centerOffset = new Vector3(-0.5f, 1.0f, -0.8f);
 
     [Tooltip("Multiplier for the hand movement.")]
     public Vector3 movementScale = new Vector3(100f, -100f, -100f);
@@ -57,6 +65,10 @@ public class BearGrappleController : MonoBehaviour
             return;
         }
 
+        // Toggle debug visibility based on the checkbox
+        leftGrappleBall.GetComponent<Renderer>().enabled  = showDebugBalls;
+        rightGrappleBall.GetComponent<Renderer>().enabled = showDebugBalls;
+
         if (!leftGrappleBall.activeSelf)  leftGrappleBall.SetActive(true);
         if (!rightGrappleBall.activeSelf) rightGrappleBall.SetActive(true);
 
@@ -78,6 +90,19 @@ public class BearGrappleController : MonoBehaviour
             Vector3 rawOffset = manoReceiver.rightHandRoot.localPosition;
             rawOffset.Scale(movementScale);
             leftGrappleBall.transform.localPosition = rawOffset;
+        }
+
+        // Arm aiming logic
+        if (leftArm != null)
+        {
+            leftArm.LookAt(leftGrappleBall.transform.position);
+            leftArm.Rotate(90f, 0f, 0f, Space.Self);
+        }
+
+        if (rightArm != null)
+        {
+            rightArm.LookAt(rightGrappleBall.transform.position);
+            rightArm.Rotate(90f, 0f, 0f, Space.Self);
         }
     }
 }
