@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     public BearGrappleController grappleController;
     public BearInteraction bearInteraction;
     public CameraRingController cameraController;
+    public HandPointer handPointer;
 
     [Header("Dependencies")]
     [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
@@ -42,5 +43,7 @@ public class GameManager : MonoBehaviour
         if (grappleController != null) grappleController.isGrapplingMode = isGrapplingMode;
         if (bearInteraction   != null) bearInteraction.isGrapplingMode   = isGrapplingMode;
         if (cameraController  != null) cameraController.isGrapplingMode  = isGrapplingMode;
+        if (handPointer       != null) handPointer.isGrapplingMode       = isGrapplingMode;
+        //if (manoReceiver      != null) manoReceiver.isGrapplingMode      = isGrapplingMode;
     }
 }

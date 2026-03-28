@@ -137,14 +137,13 @@ public class ManoLiveReceiver : MonoBehaviour
 
     private void ApplyAnchor(Transform root, float[] anchorData)
     {
-        if (anchorData.Length >= 3)
-        {
-            float x = anchorData[0] * anchorMultiplier.x;
-            float y = anchorData[1] * anchorMultiplier.y;
-            float z = anchorData[2] * anchorMultiplier.z;
+        if (anchorData.Length < 3) return;
 
-            root.localPosition = new Vector3(x, y, z);
-        }
+        float x = anchorData[0] * anchorMultiplier.x;
+        float y = anchorData[1] * anchorMultiplier.y;
+        float z = anchorData[2] * anchorMultiplier.z;
+        
+        root.localPosition = new Vector3(x, y, z);
     }
 
     void OnApplicationQuit()

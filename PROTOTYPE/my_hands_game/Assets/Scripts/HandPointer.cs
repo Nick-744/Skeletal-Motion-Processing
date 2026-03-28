@@ -13,6 +13,8 @@ public class HandPointer : MonoBehaviour
     public bool HasValidTarget           { get; private set; }
     public bool IsConfirming             { get; private set; }
 
+    public bool isGrapplingMode = false;
+
     // Visual markers
     private GameObject laserPointerMarker;
     private LineRenderer laserBeam;
@@ -40,6 +42,8 @@ public class HandPointer : MonoBehaviour
     void Update()
     {
         if (manoReceiver == null) return;
+
+        if (isGrapplingMode) { ResetLaser(); return; }
 
         // Account for CROSSED HANDS MAPPING...
         string physicalLeftGesture     = manoReceiver.currentRightGesture;
