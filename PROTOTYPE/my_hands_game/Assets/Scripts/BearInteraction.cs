@@ -33,7 +33,7 @@ public class BearInteraction : MonoBehaviour
     public float headTiltAngle = 10f;
 
     [Header("Walk & Navigation Settings")]
-    public float walkSpeed         = 0.8f;
+    public float walkSpeed         = 1.0f;
     public float rotationSpeed     = 5f;
     public float walkBounceHeight  = 0.05f;
     public float walkArmSwingAngle = 40f;

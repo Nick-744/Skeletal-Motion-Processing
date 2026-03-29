@@ -5,23 +5,38 @@ public class CameraRingController : MonoBehaviour
     [Header("Dependencies")]
     [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
     public ManoLiveReceiver manoReceiver;
+    
+    [Tooltip("Drag the Bear holding the BearGrappleController script here.")]
+    public BearGrappleController grappleController;
 
     [Header("Ring Settings")]
     // What the camera circles around
     public Vector3 centerPoint = new Vector3(1.0f, 0.0f, -1.0f);
     // How fast the camera moves around the ring
-    public float moveSpeed = 100.0f;
+    public float moveSpeed = 45.0f;
 
     [Header("Grapple Camera Settings")]
     public bool isGrapplingMode = false;
     public Transform bearTransform;
     public Vector3 thirdPersonOffset = new Vector3(0, 0.3f, -0.8f);
+    
+    [Header("Grapple Steering Settings")]
+    public float steeringSmoothTime = 0.1f; 
+    public float edgePanThreshold   = 0.05f;
+    public float edgePanSpeed       = 120f;
 
     // These will be automatically calculated in Start()...
     private float radius;
     private float height;
     private float currentAngle;
     private float startingPitch; // Camera's initial X-axis rotation
+
+    private float grappleYaw    = 0f; 
+    private float currentSteeringVelocity;
+    private float lockedBaseYaw = 0f;
+
+    private Vector3 smoothedLookTarget;
+    private Vector3 lookTargetVelocity;
 
     void Start()
     {
@@ -39,24 +54,98 @@ public class CameraRingController : MonoBehaviour
         currentAngle = Mathf.Atan2(dz, dx) * Mathf.Rad2Deg;
 
         startingPitch = transform.eulerAngles.x;
+
+        if (bearTransform != null) 
+        {
+            grappleYaw         = bearTransform.eulerAngles.y;
+            lockedBaseYaw      = grappleYaw;
+            smoothedLookTarget = bearTransform.position + Vector3.up * 0.5f; 
+        }
     }
 
-    void Update()
+    void LateUpdate()
     {
-        if (manoReceiver == null) return; // Ensure we have the receiver linked
+        if (manoReceiver == null || grappleController == null) return; // Ensure we have the receiver linked
 
         // Logic for 3rd person camera (GRAPPLING MODE)
         if (isGrapplingMode && bearTransform != null)
         {
-            Vector3 targetPosition = bearTransform.position + bearTransform.TransformDirection(thirdPersonOffset);
-            transform.position     = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 5f);
+            Transform physicalLeftHand = manoReceiver.rightHandRoot;
+            string physicalLeftGesture = manoReceiver.currentRightGesture;
 
-            transform.LookAt(bearTransform.position + Vector3.up * 0.5f);
+            Transform physicalRightHand = manoReceiver.leftHandRoot;
+            string physicalRightGesture = manoReceiver.currentLeftGesture;
+
+            bool leftGrabbing  = (grappleController.leftJoint  != null && physicalLeftGesture  == "Closed_Fist");
+            bool rightGrabbing = (grappleController.rightJoint != null && physicalRightGesture == "Closed_Fist");
+
+            Transform steeringHand = null;
+            Vector3 targetLaserEnd = Vector3.zero;
+
+            if (leftGrabbing && !rightGrabbing) 
+            {
+                steeringHand   = physicalRightHand; 
+                targetLaserEnd = grappleController.rightLaserEnd; // Left is grabbing, right is free
+            }
+            else if (rightGrabbing && !leftGrabbing) 
+            {
+                steeringHand   = physicalLeftHand;  
+                targetLaserEnd = grappleController.leftLaserEnd; // Right is grabbing, left is free
+            }
+
+            bool isSteering = (steeringHand != null);
+
+            if (!isSteering)
+            {
+                // BEHAVIOR standing
+                Vector3 targetPosition = bearTransform.position + bearTransform.TransformDirection(thirdPersonOffset);
+                transform.position     = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 5f);
+
+                transform.LookAt(bearTransform.position + Vector3.up * 0.5f);
+
+                lockedBaseYaw = bearTransform.eulerAngles.y;
+                grappleYaw    = bearTransform.eulerAngles.y;
+            }
+            else
+            {
+                // BEHAVIOR holding the rope
+                Vector3 rawOffset = steeringHand.localPosition;
+
+                if (rawOffset.x > edgePanThreshold)       lockedBaseYaw += edgePanSpeed * Time.deltaTime;
+                else if (rawOffset.x < -edgePanThreshold) lockedBaseYaw -= edgePanSpeed * Time.deltaTime;
+
+                rawOffset.Scale(grappleController.movementScale);
+
+                Quaternion lockedRotation = Quaternion.Euler(0, lockedBaseYaw, 0);
+                Vector3 virtualCenterPos  = bearTransform.position + (lockedRotation * grappleController.centerOffset);
+                Vector3 grappleBallPos    = virtualCenterPos + (lockedRotation * rawOffset);
+
+                Vector3 aimDirection = (grappleBallPos - bearTransform.position).normalized;
+                aimDirection.y       = 0; 
+
+                if (aimDirection.sqrMagnitude > 0.001f)
+                {
+                    float targetGrappleYaw = Quaternion.LookRotation(aimDirection).eulerAngles.y;
+                    grappleYaw             = Mathf.SmoothDampAngle(grappleYaw, targetGrappleYaw, ref currentSteeringVelocity, steeringSmoothTime);
+                }
+
+                // Apply the dynamic rotation to the camera offset
+                Quaternion dynamicRotation = Quaternion.Euler(0, grappleYaw, 0);
+                Vector3 rotatedOffset      = dynamicRotation * thirdPersonOffset;
+                transform.position         = bearTransform.position + rotatedOffset;
+
+                // Lock the camera to the END OF THE HELP LASER
+                smoothedLookTarget = Vector3.SmoothDamp(smoothedLookTarget, targetLaserEnd, ref lookTargetVelocity, steeringSmoothTime);
+                transform.LookAt(smoothedLookTarget);
+
+                // Make the bear to face the direction the camera turned
+                bearTransform.rotation = Quaternion.Euler(0, grappleYaw, 0);
+            }
 
             return; // Skip the ring logic
         }
 
-        // Fetch the current gestures
+        // Fetch the current gestures - BEHAVIOR ring
         string left  = manoReceiver.currentLeftGesture;
         string right = manoReceiver.currentRightGesture;
 

@@ -22,7 +22,7 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
     cap = cv2.VideoCapture(0)
     if not cap.isOpened(): raise RuntimeError('Could not open webcam.');
 
-    hand_calculator = Hand3D()
+    hand_calculator = Hand3D(mincutoff = 1.2, beta = 0.08)
 
     hand_mano_left  = ManoHand(MANO_MODEL_PATH)
     hand_mano_right = ManoHand(MANO_MODEL_PATH_RIGHT)
