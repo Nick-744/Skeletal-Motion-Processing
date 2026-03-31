@@ -10,6 +10,12 @@ public class ManoLiveReceiver : MonoBehaviour
     [Header("UDP Settings")]
     public int port = 5052;
 
+    [Header("Hand Models")]
+    [Tooltip("The left MANO mesh")]
+    public GameObject manoLeftModel;
+    [Tooltip("The right MANO mesh")]
+    public GameObject manoRightModel;
+
     [Header("Left Hand Bones (drives RIGHT hand skeleton)")]
     public Transform leftHandRoot;
     [Tooltip("Order: 0:Wrist, 1-3:Index, 4-6:Middle, 7-9:Pinky, 10-12:Ring, 13-15:Thumb")]
@@ -25,6 +31,10 @@ public class ManoLiveReceiver : MonoBehaviour
     [Header("Anchor Settings")]
     [Tooltip("Scale/flip axes")]
     public Vector3 anchorMultiplier = new Vector3(0.01f, 0.01f, -0.005f);
+
+    [Header("Global Game State")]
+    public bool isGrapplingMode   = false;
+    private bool wasGrapplingMode = false; // Tracks changes
 
     private Thread receiveThread;
     private UdpClient client;
@@ -73,12 +83,21 @@ public class ManoLiveReceiver : MonoBehaviour
 
     void Update()
     {
+        // Toggle hand visibility (Grappling Mode)
+        if (isGrapplingMode != wasGrapplingMode)
+        {
+            if (manoLeftModel  != null) manoLeftModel.SetActive(!isGrapplingMode);
+            if (manoRightModel != null) manoRightModel.SetActive(!isGrapplingMode);
+
+            wasGrapplingMode = isGrapplingMode;
+        }
+
         string currentJson;
         lock (lockObject)
         {
             if (string.IsNullOrEmpty(latestJson)) return;
             currentJson = latestJson;
-            latestJson = ""; // Consume the data
+            latestJson  = ""; // Consume the data
         }
 
         try

@@ -888,6 +888,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -5615281559999492292, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}
   m_PrefabInstance: {fileID: 1602610808}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &622646784 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}
+  m_PrefabInstance: {fileID: 1602610808}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &649729272 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4763934434074746780, guid: 03cba8eee4a39a5499293765baede9dd, type: 3}
@@ -1278,6 +1283,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ManoLiveReceiver
   port: 5052
+  manoLeftModel: {fileID: 1784120908}
+  manoRightModel: {fileID: 622646784}
   leftHandRoot: {fileID: 2124669451}
   leftBones:
   - {fileID: 2124669451}
@@ -1317,6 +1324,7 @@ MonoBehaviour:
   - {fileID: 1117470913}
   currentRightGesture: None
   anchorMultiplier: {x: 0.01, y: 0.01, z: -0.005}
+  isGrapplingMode: 0
 --- !u!4 &968769120
 Transform:
   m_ObjectHideFlags: 0
@@ -1752,7 +1760,7 @@ MonoBehaviour:
   rightArm: {fileID: 1416417456}
   isGrapplingMode: 0
   showDebugBalls: 0
-  ballSize: 0.1
+  ballSize: 0.15
   centerOffset: {x: -0.5, y: 1, z: -0.8}
   movementScale: {x: 90, y: -90, z: -90}
   maxGrappleDistance: 6
@@ -2610,6 +2618,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1312095760}
   m_LocalEulerAnglesHint: {x: 0, y: 219.338, z: 0}
+--- !u!1 &1784120908 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: adfab5f2ceddb7548a3ec5b60f6dc29c, type: 3}
+  m_PrefabInstance: {fileID: 2015606485}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1794664186 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -2593165405048014277, guid: 2e88fa62653bc1545b897e210d7bb54a, type: 3}

@@ -44,6 +44,6 @@ public class GameManager : MonoBehaviour
         if (bearInteraction   != null) bearInteraction.isGrapplingMode   = isGrapplingMode;
         if (cameraController  != null) cameraController.isGrapplingMode  = isGrapplingMode;
         if (handPointer       != null) handPointer.isGrapplingMode       = isGrapplingMode;
-        //if (manoReceiver      != null) manoReceiver.isGrapplingMode      = isGrapplingMode;
+        if (manoReceiver      != null) manoReceiver.isGrapplingMode      = isGrapplingMode;
     }
 }

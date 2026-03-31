@@ -19,7 +19,7 @@ public class BearGrappleController : MonoBehaviour
     public bool isGrapplingMode = false;
     [Tooltip("Check this to render the balls for debugging.")]
     public bool showDebugBalls  = false;
-    public float ballSize       = 0.1f;
+    public float ballSize       = 0.15f;
 
     public Vector3 centerOffset = new Vector3(-0.5f, 1.0f, -0.8f);
 
@@ -88,8 +88,8 @@ public class BearGrappleController : MonoBehaviour
         rightGrappleBall.transform.SetParent(virtualCenter.transform);
         leftGrappleBall.transform.SetParent(virtualCenter.transform);
 
-        leftTargetMarker  = CreateDebugBall("LeftTargetMarker",  Color.yellow, 0.2f);
-        rightTargetMarker = CreateDebugBall("RightTargetMarker", Color.yellow, 0.2f);
+        leftTargetMarker  = CreateDebugBall("LeftTargetMarker",  Color.yellow);
+        rightTargetMarker = CreateDebugBall("RightTargetMarker", Color.yellow);
         leftTargetMarker.SetActive(false);
         rightTargetMarker.SetActive(false);
 
