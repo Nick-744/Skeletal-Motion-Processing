@@ -22,8 +22,6 @@ public class CameraRingController : MonoBehaviour
     
     [Header("Grapple Steering Settings")]
     public float steeringSmoothTime = 0.1f; 
-    public float edgePanThreshold   = 0.05f;
-    public float edgePanSpeed       = 120f;
 
     // These will be automatically calculated in Start()...
     private float radius;
@@ -98,8 +96,7 @@ public class CameraRingController : MonoBehaviour
             if (!isSteering)
             {
                 // BEHAVIOR standing
-                Vector3 targetPosition = bearTransform.position + bearTransform.TransformDirection(thirdPersonOffset);
-                transform.position     = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 5f);
+                transform.position = bearTransform.position + bearTransform.TransformDirection(thirdPersonOffset); // No smooth transition...
 
                 transform.LookAt(bearTransform.position + Vector3.up * 0.5f);
 
@@ -110,10 +107,6 @@ public class CameraRingController : MonoBehaviour
             {
                 // BEHAVIOR holding the rope
                 Vector3 rawOffset = steeringHand.localPosition;
-
-                if (rawOffset.x > edgePanThreshold)       lockedBaseYaw += edgePanSpeed * Time.deltaTime;
-                else if (rawOffset.x < -edgePanThreshold) lockedBaseYaw -= edgePanSpeed * Time.deltaTime;
-
                 rawOffset.Scale(grappleController.movementScale);
 
                 Quaternion lockedRotation = Quaternion.Euler(0, lockedBaseYaw, 0);

@@ -300,13 +300,13 @@ public class BearGrappleController : MonoBehaviour
                     // Save the length when we first hit the target
                     initialRopeLength = Vector3.Distance(bearRoot.position, hit.point);
 
-                    joint.maxDistance = initialRopeLength * 0.7f;
+                    joint.maxDistance = initialRopeLength * 0.6f;
                     joint.minDistance = initialRopeLength * 0.3f;
 
                     // Spring settings
-                    joint.spring    = 15f;
-                    joint.damper    = 7f;
-                    joint.massScale = 4.5f;
+                    joint.spring    = 30f;
+                    joint.damper    = 20f;
+                    joint.massScale = 3.0f;
 
                     rope.enabled = true;
                     detachTimer  = 0f;
@@ -333,7 +333,7 @@ public class BearGrappleController : MonoBehaviour
 
             if (rope.enabled)
             {
-                rope.SetPosition(0, visualStartPos);
+                rope.SetPosition(0, visualStartPos + (aimDirection * 0.2f));
                 rope.SetPosition(1, joint.connectedAnchor);
             }
         }
