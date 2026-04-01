@@ -432,7 +432,7 @@ MonoBehaviour:
   moveSpeed: 45
   isGrapplingMode: 0
   bearTransform: {fileID: 1389613769}
-  thirdPersonOffset: {x: 0, y: 0.3, z: -0.8}
+  thirdPersonOffset: {x: 0, y: 0.3, z: -1}
   steeringSmoothTime: 0.1
   edgePanThreshold: 0.05
   edgePanSpeed: 120
@@ -1761,10 +1761,9 @@ MonoBehaviour:
   isGrapplingMode: 0
   showDebugBalls: 0
   ballSize: 0.15
-  centerOffset: {x: -0.5, y: 1, z: -0.8}
+  centerOffset: {x: -0.5, y: 1, z: -0.7}
   movementScale: {x: 90, y: -90, z: -90}
   maxGrappleDistance: 6
-  reelInSpeed: 8
   graspableTag: Graspable
   aimAssistRadius: 0.8
   grappleAirDrag: 30

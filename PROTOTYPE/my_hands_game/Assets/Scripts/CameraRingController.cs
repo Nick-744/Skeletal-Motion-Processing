@@ -18,7 +18,7 @@ public class CameraRingController : MonoBehaviour
     [Header("Grapple Camera Settings")]
     public bool isGrapplingMode = false;
     public Transform bearTransform;
-    public Vector3 thirdPersonOffset = new Vector3(0, 0.3f, -0.8f);
+    public Vector3 thirdPersonOffset = new Vector3(0, 0.3f, -1.0f);
     
     [Header("Grapple Steering Settings")]
     public float steeringSmoothTime = 0.1f; 

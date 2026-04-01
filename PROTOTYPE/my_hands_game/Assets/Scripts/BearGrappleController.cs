@@ -21,14 +21,13 @@ public class BearGrappleController : MonoBehaviour
     public bool showDebugBalls  = false;
     public float ballSize       = 0.15f;
 
-    public Vector3 centerOffset = new Vector3(-0.5f, 1.0f, -0.8f);
+    public Vector3 centerOffset = new Vector3(-0.5f, 1.0f, -0.7f);
 
     [Tooltip("Multiplier for the hand movement.")]
     public Vector3 movementScale = new Vector3(90f, -90f, -90f);
 
     [Header("Grapple Physics & Ropes")]
     public float maxGrappleDistance = 6f;
-    public float reelInSpeed        = 8f;
     public string graspableTag      = "Graspable";
 
     [Tooltip("Makes the raycast thicker (Aim Assist)")]
@@ -65,8 +64,8 @@ public class BearGrappleController : MonoBehaviour
     private LineRenderer rightAimLaser;
 
     // Ropes and Joints
-    [HideInInspector] public ConfigurableJoint leftJoint;
-    [HideInInspector] public ConfigurableJoint rightJoint;
+    [HideInInspector] public SpringJoint leftJoint;
+    [HideInInspector] public SpringJoint rightJoint;
     private LineRenderer leftRope;
     private LineRenderer rightRope;
 
@@ -259,7 +258,7 @@ public class BearGrappleController : MonoBehaviour
         }
     }
 
-    private void HandleGrapple(string currentGesture, ref string previousGesture, Transform grappleBall, Transform arm, ref ConfigurableJoint joint, LineRenderer rope, GameObject targetMarker, LineRenderer aimLaser, ref float detachTimer, ConfigurableJoint otherJoint, ref Vector3 laserEndOut, ref float initialRopeLength)
+    private void HandleGrapple(string currentGesture, ref string previousGesture, Transform grappleBall, Transform arm, ref SpringJoint joint, LineRenderer rope, GameObject targetMarker, LineRenderer aimLaser, ref float detachTimer, SpringJoint otherJoint, ref Vector3 laserEndOut, ref float initialRopeLength)
     {
         Vector3 visualStartPos = arm != null ? arm.position : bearRoot.position;
         Vector3 aimDirection   = (grappleBall.position - visualStartPos).normalized;
@@ -294,21 +293,20 @@ public class BearGrappleController : MonoBehaviour
             {
                 if (isLookingAtTarget)
                 {
-                    joint = bearRoot.gameObject.AddComponent<ConfigurableJoint>();
+                    joint = bearRoot.gameObject.AddComponent<SpringJoint>();
                     joint.autoConfigureConnectedAnchor = false;
                     joint.connectedAnchor              = hit.point;
-
-                    joint.xMotion = ConfigurableJointMotion.Limited;
-                    joint.yMotion = ConfigurableJointMotion.Limited;
-                    joint.zMotion = ConfigurableJointMotion.Limited;
 
                     // Save the length when we first hit the target
                     initialRopeLength = Vector3.Distance(bearRoot.position, hit.point);
 
-                    SoftJointLimit limit = new SoftJointLimit();
-                    limit.limit          = initialRopeLength;
-                    limit.bounciness     = 0f; 
-                    joint.linearLimit    = limit;
+                    joint.maxDistance = initialRopeLength * 0.7f;
+                    joint.minDistance = initialRopeLength * 0.3f;
+
+                    // Spring settings
+                    joint.spring    = 15f;
+                    joint.damper    = 7f;
+                    joint.massScale = 4.5f;
 
                     rope.enabled = true;
                     detachTimer  = 0f;
@@ -317,19 +315,7 @@ public class BearGrappleController : MonoBehaviour
         }
         else
         {
-            if (currentGesture == grabGesture)
-            {
-                SoftJointLimit limit = joint.linearLimit;
-                limit.limit         -= reelInSpeed * Time.deltaTime;
-                
-                // Clamp the reeling in!
-                float twoThirdsLength = initialRopeLength * (2f / 3f);
-                limit.limit           = Mathf.Max(limit.limit, twoThirdsLength);
-                
-                joint.linearLimit = limit;
-                
-                detachTimer = 0f;
-            }
+            if (currentGesture == grabGesture) detachTimer = 0f;
             else
             {
                 if (otherJoint != null)
