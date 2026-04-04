@@ -193,14 +193,14 @@ public class BearGrappleController : MonoBehaviour
         {
             Vector3 rawOffset = manoReceiver.leftHandRoot.localPosition;
             rawOffset.Scale(movementScale);
-            rightGrappleBall.transform.localPosition = rawOffset;
+            leftGrappleBall.transform.localPosition = rawOffset;
         }
 
         if (manoReceiver.rightHandRoot != null)
         {
             Vector3 rawOffset = manoReceiver.rightHandRoot.localPosition;
             rawOffset.Scale(movementScale);
-            leftGrappleBall.transform.localPosition = rawOffset;
+            rightGrappleBall.transform.localPosition = rawOffset;
         }
 
         // Arm aiming logic
@@ -217,8 +217,8 @@ public class BearGrappleController : MonoBehaviour
         }
 
         // Grappling logic
-        string currentLeftGesture  = manoReceiver.currentRightGesture;
-        string currentRightGesture = manoReceiver.currentLeftGesture;
+        string currentLeftGesture  = manoReceiver.currentLeftGesture;
+        string currentRightGesture = manoReceiver.currentRightGesture;
 
         HandleGrapple(
             currentLeftGesture,

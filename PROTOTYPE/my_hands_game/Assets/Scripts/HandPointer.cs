@@ -45,9 +45,8 @@ public class HandPointer : MonoBehaviour
 
         if (isGrapplingMode) { ResetLaser(); return; }
 
-        // Account for CROSSED HANDS MAPPING...
-        string physicalLeftGesture     = manoReceiver.currentRightGesture;
-        Transform[] physicalRightBones = manoReceiver.leftBones;
+        string physicalLeftGesture     = manoReceiver.currentLeftGesture;
+        Transform[] physicalRightBones = manoReceiver.rightBones;
 
         // Aiming Logic (Physical Right Hand)
         // Index finger's mid and tip joints... (ManoLiveReceiver)

@@ -63,16 +63,16 @@ public class CameraRingController : MonoBehaviour
 
     void LateUpdate()
     {
-        if (manoReceiver == null || grappleController == null) return; // Ensure we have the receiver linked
+        if (manoReceiver == null) return; // Ensure we have the receiver linked
 
         // Logic for 3rd person camera (GRAPPLING MODE)
-        if (isGrapplingMode && bearTransform != null)
+        if (isGrapplingMode && bearTransform != null && grappleController != null)
         {
-            Transform physicalLeftHand = manoReceiver.rightHandRoot;
-            string physicalLeftGesture = manoReceiver.currentRightGesture;
+            Transform physicalLeftHand = manoReceiver.leftHandRoot;
+            string physicalLeftGesture = manoReceiver.currentLeftGesture;
 
-            Transform physicalRightHand = manoReceiver.leftHandRoot;
-            string physicalRightGesture = manoReceiver.currentLeftGesture;
+            Transform physicalRightHand = manoReceiver.rightHandRoot;
+            string physicalRightGesture = manoReceiver.currentRightGesture;
 
             bool leftGrabbing  = (grappleController.leftJoint  != null && physicalLeftGesture  == "Closed_Fist");
             bool rightGrabbing = (grappleController.rightJoint != null && physicalRightGesture == "Closed_Fist");

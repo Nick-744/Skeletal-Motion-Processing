@@ -154,7 +154,7 @@ public class BearInteraction : MonoBehaviour
 
             float waveOffset = Mathf.Sin(Time.time * waveSpeed) * waveAngle;
 
-            if (isLeftWaving)
+            if (isRightWaving)
             {
                 Vector3 wavingRotation = leftArmUpRotation + new Vector3(0, 0, waveOffset);
                 leftArmTarget          = leftStartRot * Quaternion.Euler(wavingRotation);
@@ -162,7 +162,7 @@ public class BearInteraction : MonoBehaviour
                 headTarget = headStartRot * Quaternion.Euler(0, 0, -headTiltAngle);
             }
 
-            if (isRightWaving)
+            if (isLeftWaving)
             {
                 Vector3 wavingRotation = rightArmUpRotation + new Vector3(0, 0, -waveOffset);
                 rightArmTarget         = rightStartRot * Quaternion.Euler(wavingRotation);

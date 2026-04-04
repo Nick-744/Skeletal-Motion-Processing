@@ -16,13 +16,13 @@ public class ManoLiveReceiver : MonoBehaviour
     [Tooltip("The right MANO mesh")]
     public GameObject manoRightModel;
 
-    [Header("Left Hand Bones (drives RIGHT hand skeleton)")]
+    [Header("Left Hand Bones")]
     public Transform leftHandRoot;
     [Tooltip("Order: 0:Wrist, 1-3:Index, 4-6:Middle, 7-9:Pinky, 10-12:Ring, 13-15:Thumb")]
     public Transform[] leftBones     = new Transform[16];
     public string currentLeftGesture = "None";
 
-    [Header("Right Hand Bones (drives LEFT hand skeleton)")]
+    [Header("Right Hand Bones")]
     public Transform rightHandRoot;
     [Tooltip("Order: 0:Wrist, 1-3:Index, 4-6:Middle, 7-9:Pinky, 10-12:Ring, 13-15:Thumb")]
     public Transform[] rightBones     = new Transform[16];
@@ -104,17 +104,19 @@ public class ManoLiveReceiver : MonoBehaviour
         {
             ManoPayload payload = JsonConvert.DeserializeObject<ManoPayload>(currentJson);
 
+            // ---< CROSS-MAPPING >--- //
+            
             // Apply Poses
-            if (payload.left_pose  != null) ApplyPose(leftBones,  payload.left_pose);
-            if (payload.right_pose != null) ApplyPose(rightBones, payload.right_pose);
+            if (payload.right_pose != null) ApplyPose(leftBones,  payload.right_pose);
+            if (payload.left_pose  != null) ApplyPose(rightBones, payload.left_pose);
 
             // Update Gestures
-            if (payload.left_gesture  != null) currentLeftGesture  = payload.left_gesture;
-            if (payload.right_gesture != null) currentRightGesture = payload.right_gesture;
+            if (payload.right_gesture != null) currentLeftGesture  = payload.right_gesture;
+            if (payload.left_gesture  != null) currentRightGesture = payload.left_gesture;
 
             // Apply Anchors
-            if (payload.left_anchor  != null && leftHandRoot  != null) ApplyAnchor(leftHandRoot,  payload.left_anchor);
-            if (payload.right_anchor != null && rightHandRoot != null) ApplyAnchor(rightHandRoot, payload.right_anchor);
+            if (payload.right_anchor != null && leftHandRoot  != null) ApplyAnchor(leftHandRoot,  payload.right_anchor);
+            if (payload.left_anchor  != null && rightHandRoot != null) ApplyAnchor(rightHandRoot, payload.left_anchor);
         }
         catch (System.Exception e) { Debug.LogError($"Error parsing JSON: {e.Message}"); }
     }
