@@ -8,10 +8,13 @@ public class HandPointer : MonoBehaviour
 
     [Header("Settings")]
     public string confirmGesture = "Victory";
+    [Tooltip("The layers that the hand pointer can interact with.")]
+    public LayerMask interactableLayers = ~0; // Default to everything
 
     public Vector3 CurrentTargetPosition { get; private set; }
     public bool HasValidTarget           { get; private set; }
     public bool IsConfirming             { get; private set; }
+    public RaycastHit CurrentHit         { get; private set; }
 
     public bool isGrapplingMode = false;
 
@@ -58,22 +61,20 @@ public class HandPointer : MonoBehaviour
             // Calculate direction from the mid joint to the tip
             Vector3 pointDirection = (indexTip.position - indexMid.position).normalized;
 
-            if (Physics.Raycast(indexTip.position, pointDirection, out RaycastHit hit, 20f))
+            if (Physics.Raycast(indexTip.position, pointDirection, out RaycastHit hit, 20f, interactableLayers))
             {
-                if (hit.collider.gameObject.name.ToLower().Contains("island"))
-                {
-                    laserBeam.enabled = true;
+                laserBeam.enabled = true;
 
-                    laserBeam.SetPosition(0, indexTip.position);
-                    laserBeam.SetPosition(1, hit.point);
+                laserBeam.SetPosition(0, indexTip.position);
+                laserBeam.SetPosition(1, hit.point);
 
-                    CurrentTargetPosition = hit.point;
-                    HasValidTarget        = true;
+                // Update properties
+                CurrentHit            = hit; 
+                CurrentTargetPosition = hit.point;
+                HasValidTarget        = true;
 
-                    laserPointerMarker.transform.position = CurrentTargetPosition;
-                    laserPointerMarker.SetActive(true);
-                }
-                else ResetLaser();
+                laserPointerMarker.transform.position = CurrentTargetPosition;
+                laserPointerMarker.SetActive(true);
             }
             else ResetLaser();
         }
@@ -89,5 +90,8 @@ public class HandPointer : MonoBehaviour
         laserBeam.enabled = false;
         HasValidTarget    = false;
         laserPointerMarker.SetActive(false);
+
+        // Clear the hit struct
+        CurrentHit = new RaycastHit(); 
     }
 }
