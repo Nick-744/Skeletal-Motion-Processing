@@ -2678,6 +2678,18 @@ MonoBehaviour:
   braceletPositionOffset: {x: -0.15, y: 0, z: 0}
   ballRadius: 0.5
   ballScale: 0.2
+  activeBallScale: 0.4
+  defaultColor: {r: 0, g: 1, b: 0, a: 1}
+  activeColor: {r: 0.627451, g: 0.1254902, b: 0.9411765, a: 1}
+  belowBraceletLocalPosition: {x: -0.5, y: 0, z: 0}
+  menuNames:
+  - Traverse
+  - Move
+  - Destroy
+  textOffset: {x: -0.6, y: 0, z: 0}
+  fontSize: 3
+  rightActivationGesture: Victory
+  leftSelectionGesture: Thumb_Up
 --- !u!1 &981343530 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -678909663146211545, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}

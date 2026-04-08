@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 public class BraceletMenuController : MonoBehaviour
 {
@@ -30,16 +31,45 @@ public class BraceletMenuController : MonoBehaviour
     [Tooltip("Local position to move the highest ball below the center of the bracelet")]
     public Vector3 belowBraceletLocalPosition = new Vector3(-0.5f, 0f, 0f);
 
+    [Header("Text Settings")]
+    public string[] menuNames = { "Option 1", "Option 2", "Option 3" };
+    [Tooltip("How far below the active ball the text should float")]
+    public Vector3 textOffset = new Vector3(-0.6f, 0f, 0f);
+    [Tooltip("Size of the floating text")]
+    public float fontSize     = 3f;
+
+    [Header("Interaction Settings")]
+    [Tooltip("Gesture for right hand to toggle the menu")]
+    public string rightActivationGesture = "Victory";
+    [Tooltip("Gesture for left hand to select the active item")]
+    public string leftSelectionGesture   = "Thumb_Up";
+
     private float transitionSpeed = 5f;
 
     private GameObject braceletVisual;
     private GameObject band;
     private GameObject[] balls = new GameObject[3];
-    
+
+    // Text Components
+    private GameObject textObject;
+    private TextMeshPro floatingText;
+
     // Cache original local positions to prevent infinite loops
     private Vector3[] defaultLocalPositions = new Vector3[3];
 
-    void Start() { CreateYellowBracelet(); }
+    // Interaction states
+    private bool isMenuActive            = false;
+    private bool hasReleasedRightGesture = true;
+    private bool hasReleasedLeftGesture  = true;
+
+    void Start() 
+    { 
+        CreateYellowBracelet();
+        CreateMenuText();
+        
+        // Hide the menu by default until activated
+        if (braceletVisual != null) braceletVisual.SetActive(isMenuActive);
+    }
 
     private void CreateYellowBracelet()
     {
@@ -82,9 +112,42 @@ public class BraceletMenuController : MonoBehaviour
         }
     }
 
+    private void CreateMenuText()
+    {
+        textObject = new GameObject("ActiveItem_Text");
+        textObject.transform.SetParent(braceletVisual.transform);
+
+        // Configuration
+        floatingText           = textObject.AddComponent<TextMeshPro>();
+        floatingText.alignment = TextAlignmentOptions.Center;
+        floatingText.fontSize  = fontSize;
+        floatingText.color     = Color.white;
+
+        // Start hidden
+        floatingText.text = "";
+    }
+
     void Update()
     {
-        if (manoReceiver == null || manoReceiver.rightBones == null || manoReceiver.rightBones.Length == 0) return;
+        if (manoReceiver == null) return;
+
+        // Menu activation - Right hand
+        if (manoReceiver.currentRightGesture == rightActivationGesture)
+        {
+            if (hasReleasedRightGesture)
+            {
+                isMenuActive            = !isMenuActive;
+                braceletVisual.SetActive(isMenuActive);
+                hasReleasedRightGesture = false;
+                Debug.Log($"Bracelet Menu is now {(isMenuActive ? "Active" : "Inactive")}");
+            }
+        }
+        else hasReleasedRightGesture = true;
+
+        if (!isMenuActive) return; // Skip the rest if menu is not active...
+
+        // Wrist tracking - Right hand
+        if (manoReceiver.rightBones == null || manoReceiver.rightBones.Length == 0) return;
 
         // Wrist
         Transform rightWrist = manoReceiver.rightBones[0];
@@ -135,6 +198,50 @@ public class BraceletMenuController : MonoBehaviour
 
             Material mat = balls[i].GetComponent<Renderer>().material;
             mat.color    = Color.Lerp(mat.color, targetColor, Time.deltaTime * transitionSpeed);
+        }
+
+        // Update Text String
+        if (highestBallIndex >= 0 && highestBallIndex < menuNames.Length) floatingText.text = menuNames[highestBallIndex];
+
+        Vector3 targetTextPos              = belowBraceletLocalPosition + textOffset;
+        textObject.transform.localPosition = Vector3.Lerp(textObject.transform.localPosition, targetTextPos, Time.deltaTime * transitionSpeed);
+
+        // Billboard text - always faces the player's camera + matches head tilt
+        if (Camera.main != null)
+        {
+            Vector3 lookDirection         = textObject.transform.position - Camera.main.transform.position;
+            textObject.transform.rotation = Quaternion.LookRotation(lookDirection, Camera.main.transform.up);
+        }
+
+        // Menu selection - Left hand
+        if (manoReceiver.currentLeftGesture == leftSelectionGesture)
+        {
+            if (hasReleasedLeftGesture)
+            {
+                hasReleasedLeftGesture = false;
+                isMenuActive           = false;
+                braceletVisual.SetActive(isMenuActive);
+                Debug.Log($"Item {highestBallIndex} Selected!");
+                ExecuteSelection(highestBallIndex);
+                }
+        }
+        else hasReleasedLeftGesture = true;
+    }
+
+    private void ExecuteSelection(int index)
+    {
+        // Testing for now...
+        switch (index)
+        {
+            case 0:
+                Debug.Log(menuNames[0] + " selected.");
+                break;
+            case 1:
+                Debug.Log(menuNames[1] + " selected.");
+                break;
+            case 2:
+                Debug.Log(menuNames[2] + " selected.");
+                break;
         }
     }
 }
