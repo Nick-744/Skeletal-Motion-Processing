@@ -2676,6 +2676,8 @@ MonoBehaviour:
   braceletScale: {x: 0.6, y: 0.06, z: 0.7}
   braceletRotationOffset: {x: 0, y: 0, z: 90}
   braceletPositionOffset: {x: -0.15, y: 0, z: 0}
+  ballRadius: 0.5
+  ballScale: 0.2
 --- !u!1 &981343530 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -678909663146211545, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
