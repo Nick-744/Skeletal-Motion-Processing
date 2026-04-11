@@ -11,11 +11,20 @@ public class HandPointer : MonoBehaviour
     [Tooltip("The layers that the hand pointer can interact with.")]
     public LayerMask interactableLayers = ~0; // Default to everything
 
+    [Header("Aiming Style (Iron Man style or finger pointing)")]
+    public bool usePalmRepulsor = false;
+    
+    [Header("Bone Indices (for palm calculation)")]
+    public int wristIndex     = 0;
+    public int indexBaseIndex = 1; // Index base joint
+    public int pinkyBaseIndex = 7; // Pinky base joint
+
     public Vector3 CurrentTargetPosition { get; private set; }
     public bool HasValidTarget           { get; private set; }
     public bool IsConfirming             { get; private set; }
     public RaycastHit CurrentHit         { get; private set; }
 
+    [Header("Grappling Mode")]
     public bool isGrapplingMode = false;
 
     // Visual markers
@@ -34,8 +43,8 @@ public class HandPointer : MonoBehaviour
         // Laser Beam
         GameObject laserObj  = new GameObject("LaserBeam");
         laserBeam            = laserObj.AddComponent<LineRenderer>();
-        laserBeam.startWidth = 0.01f;
-        laserBeam.endWidth   = 0.01f;
+        laserBeam.startWidth = 0.02f;
+        laserBeam.endWidth   = 0.02f;
         laserBeam.material   = new Material(Shader.Find("Sprites/Default"));
         laserBeam.startColor = Color.red;
         laserBeam.endColor   = Color.red;
@@ -52,20 +61,56 @@ public class HandPointer : MonoBehaviour
         Transform[] physicalRightBones = manoReceiver.rightBones;
 
         // Aiming Logic (Physical Right Hand)
-        // Index finger's mid and tip joints... (ManoLiveReceiver)
-        Transform indexMid = physicalRightBones[2];
-        Transform indexTip = physicalRightBones[3];
+        Vector3 rayOrigin    = Vector3.zero;
+        Vector3 rayDirection = Vector3.zero;
+        bool validAimBones   = false;
 
-        if (indexMid != null && indexTip != null)
+        // Determine Origin and Direction based on mode
+        if (usePalmRepulsor)
         {
-            // Calculate direction from the mid joint to the tip
-            Vector3 pointDirection = (indexTip.position - indexMid.position).normalized;
+            // Iron Man style
+            Transform wrist     = physicalRightBones[wristIndex];
+            Transform indexBase = physicalRightBones[indexBaseIndex];
+            Transform pinkyBase = physicalRightBones[pinkyBaseIndex];
 
-            if (Physics.Raycast(indexTip.position, pointDirection, out RaycastHit hit, 20f, interactableLayers))
+            if (wrist != null && indexBase != null && pinkyBase != null)
+            {
+                // Approximate the center of the palm
+                rayOrigin = (wrist.position + indexBase.position + pinkyBase.position) / 3f;
+
+                // Cross product
+                Vector3 toIndex = indexBase.position - wrist.position;
+                Vector3 toPinky = pinkyBase.position - wrist.position;
+                rayDirection    = Vector3.Cross(toPinky, toIndex).normalized;
+
+                validAimBones = true;
+            }
+        }
+        else
+        {
+            // Finger pointing style
+            Transform indexMid = physicalRightBones[2];
+            Transform indexTip = physicalRightBones[3];
+
+            if (indexMid != null && indexTip != null)
+            {
+                rayOrigin = indexTip.position;
+
+                // Calculate direction from the mid joint to the tip
+                rayDirection = (indexTip.position - indexMid.position).normalized;
+
+                validAimBones = true;
+            }
+        }
+
+        // Execute Raycast
+        if (validAimBones)
+        {
+            if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hit, 20f, interactableLayers))
             {
                 laserBeam.enabled = true;
 
-                laserBeam.SetPosition(0, indexTip.position);
+                laserBeam.SetPosition(0, rayOrigin);
                 laserBeam.SetPosition(1, hit.point);
 
                 // Update properties

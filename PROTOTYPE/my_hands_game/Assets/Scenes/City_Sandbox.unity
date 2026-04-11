@@ -1194,6 +1194,22 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2123913870}
     - target: {fileID: 8484778309361403020, guid: 509db328cd94d97438952fd1c4d25a0a, type: 3}
+      propertyPath: indexBaseIndex
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8484778309361403020, guid: 509db328cd94d97438952fd1c4d25a0a, type: 3}
+      propertyPath: pinkyBaseIndex
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 8484778309361403020, guid: 509db328cd94d97438952fd1c4d25a0a, type: 3}
+      propertyPath: isGrapplingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8484778309361403020, guid: 509db328cd94d97438952fd1c4d25a0a, type: 3}
+      propertyPath: invertPalmDirection
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8484778309361403020, guid: 509db328cd94d97438952fd1c4d25a0a, type: 3}
       propertyPath: interactableLayers.m_Bits
       value: 4294967295
       objectReference: {fileID: 0}
