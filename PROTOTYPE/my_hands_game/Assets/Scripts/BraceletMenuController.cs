@@ -7,6 +7,14 @@ public class BraceletMenuController : MonoBehaviour
     [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
     public ManoLiveReceiver manoReceiver;
 
+    [Header("Mode Controllers")]
+    [Tooltip("Drag the GameObject holding the CameraRingController here.")]
+    public CameraRingController cameraController;
+    [Tooltip("Drag the GameObject holding the BuildingGrabber here.")]
+    public BuildingGrabber buildingGrabber;
+    [Tooltip("Drag the GameObject holding the HandPointer here.")]
+    public HandPointer handPointer;
+
     [Header("Bracelet Settings")]
     [Tooltip("Scale")]
     public Vector3 braceletScale          = new Vector3(0.6f, 0.06f, 0.7f);
@@ -24,10 +32,12 @@ public class BraceletMenuController : MonoBehaviour
     [Header("Active Ball Settings")]
     [Tooltip("Size of the active ball below the bracelet")]
     public float activeBallScale = 0.4f;
-    [Tooltip("Color of the normal balls")]
+    [Tooltip("Color of the normal inactive balls")]
     public Color defaultColor    = Color.green;
-    [Tooltip("Color of the active ball")]
+    [Tooltip("Color of the ball currently hovering over to select")]
     public Color activeColor     = Color.purple;
+    [Tooltip("Color of the ball that represents the CURRENTLY RUNNING mode")]
+    public Color selectedColor   = Color.red;
     [Tooltip("Local position to move the highest ball below the center of the bracelet")]
     public Vector3 belowBraceletLocalPosition = new Vector3(-0.5f, 0f, 0f);
 
@@ -62,6 +72,9 @@ public class BraceletMenuController : MonoBehaviour
     private bool hasReleasedRightGesture = true;
     private bool hasReleasedLeftGesture  = true;
 
+    // Tracker for currently selected mode (-1: Default)
+    private int currentActiveMode = -1; 
+
     void Start() 
     { 
         CreateYellowBracelet();
@@ -69,6 +82,9 @@ public class BraceletMenuController : MonoBehaviour
         
         // Hide the menu by default until activated
         if (braceletVisual != null) braceletVisual.SetActive(isMenuActive);
+
+        // Ensure app starts in the default state
+        ApplyCurrentMode(); 
     }
 
     private void CreateYellowBracelet()
@@ -139,7 +155,6 @@ public class BraceletMenuController : MonoBehaviour
                 isMenuActive            = !isMenuActive;
                 braceletVisual.SetActive(isMenuActive);
                 hasReleasedRightGesture = false;
-                Debug.Log($"Bracelet Menu is now {(isMenuActive ? "Active" : "Inactive")}");
             }
         }
         else hasReleasedRightGesture = true;
@@ -189,7 +204,12 @@ public class BraceletMenuController : MonoBehaviour
             {
                 targetLocalPosition = defaultLocalPositions[i];
                 targetScale         = Vector3.one * ballScale;
-                targetColor         = defaultColor;
+
+                // Active -> red, Inactive -> green
+                if (i == currentActiveMode)
+                    targetColor = selectedColor;
+                else
+                    targetColor = defaultColor;
             }
 
             // Smoothly interpolate position, scale, and color
@@ -221,26 +241,49 @@ public class BraceletMenuController : MonoBehaviour
                 hasReleasedLeftGesture = false;
                 isMenuActive           = false;
                 braceletVisual.SetActive(isMenuActive);
-                Debug.Log($"Item {highestBallIndex} Selected!");
                 ExecuteSelection(highestBallIndex);
-                }
+            }
         }
         else hasReleasedLeftGesture = true;
     }
 
     private void ExecuteSelection(int index)
     {
-        // Testing for now...
-        switch (index)
+        // Toggle logic: If the selected option is already active, turn it off...
+        if (currentActiveMode == index) currentActiveMode = -1; // Default
+        else
         {
+            currentActiveMode = index;
+            Debug.Log(menuNames[index] + " selected.");
+        }
+
+        ApplyCurrentMode();
+    }
+
+    private void ApplyCurrentMode()
+    {
+        // Reset everything
+        if (cameraController != null) cameraController.isGrapplingMode = false;
+        if (buildingGrabber  != null) buildingGrabber.enabled          = false;
+        if (handPointer      != null) handPointer.enabled              = false;
+
+        switch (currentActiveMode)
+        {
+            case -1:
+                // Default Mode: Basic ring camera only...
+                break;
+            
             case 0:
-                Debug.Log(menuNames[0] + " selected.");
+                // TODO: Implement traverse mode here later...
                 break;
+            
             case 1:
-                Debug.Log(menuNames[1] + " selected.");
+                if (buildingGrabber != null) buildingGrabber.enabled = true;
+                if (handPointer     != null) handPointer.enabled     = true;
                 break;
+            
             case 2:
-                Debug.Log(menuNames[2] + " selected.");
+                // Nothing yet...
                 break;
         }
     }

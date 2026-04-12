@@ -1239,6 +1239,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BuildingGrabber
   targetObjectName: cube
+--- !u!114 &374962028 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8484778309361403020, guid: 509db328cd94d97438952fd1c4d25a0a, type: 3}
+  m_PrefabInstance: {fileID: 374962022}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374962023}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e381e3e5dc8a6a46b8c51b1f3eb75fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HandPointer
 --- !u!1 &392800473 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7568798129046154036, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
@@ -2689,6 +2700,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BraceletMenuController
   manoReceiver: {fileID: 2123913870}
+  cameraController: {fileID: 1188352543}
+  buildingGrabber: {fileID: 374962027}
+  handPointer: {fileID: 374962028}
   braceletScale: {x: 0.6, y: 0.06, z: 0.7}
   braceletRotationOffset: {x: 0, y: 0, z: 90}
   braceletPositionOffset: {x: -0.15, y: 0, z: 0}
@@ -2976,6 +2990,17 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -2576229488831876082, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
+--- !u!114 &1188352543 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2139517966342556168, guid: d342ee9e52cb97443acb540cfe3e6ba2, type: 3}
+  m_PrefabInstance: {fileID: 2083183087}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d78ed2d46b1f08f439561ebf9506708d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraRingController
 --- !u!1 &1195213312 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5883808945153399437, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}

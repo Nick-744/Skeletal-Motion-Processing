@@ -139,4 +139,12 @@ public class HandPointer : MonoBehaviour
         // Clear the hit struct
         CurrentHit = new RaycastHit(); 
     }
+
+    // ---< Cleanup >--- //
+    void OnDisable()
+    {
+        if (laserBeam != null && laserPointerMarker != null) ResetLaser();
+
+        IsConfirming = false;
+    }
 }

@@ -44,4 +44,7 @@ public class BuildingGrabber : MonoBehaviour
             else { grabbedBuilding = null; }
         }
     }
+
+    // Cleanup - If the script is disabled while holding a building, drop it safely
+    void OnDisable() { if (grabbedBuilding != null) grabbedBuilding = null; }
 }
