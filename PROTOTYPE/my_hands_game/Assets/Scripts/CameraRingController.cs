@@ -27,6 +27,8 @@ public class CameraRingController : MonoBehaviour
     public bool isTraverseMode         = false;
     [Tooltip("Sensitivity multiplier (XYZ).")]
     public Vector3 traverseSensitivity = new Vector3(-0.25f, 2.0f, 2.0f);
+    [Tooltip("Deadzone threshold.")]
+    public Vector3 traverseDeadzone = new Vector3(5.0f, 5.0f, 5.0f);
     [Tooltip("Drag the parent object containing both the Camera and Hands here.")]
     public Transform playerRig;
 
@@ -51,6 +53,11 @@ public class CameraRingController : MonoBehaviour
     private Vector3 initialLocalHandVector;
     private float initialLocalMidpointY;
 
+    // State Tracking
+    private bool wasInSpecialMode = false;
+    private Vector3 initialRigPosition;
+    private Quaternion initialRigRotation;
+
     void Start()
     {
         // Grab the starting height
@@ -74,6 +81,13 @@ public class CameraRingController : MonoBehaviour
             lockedBaseYaw      = grappleYaw;
             smoothedLookTarget = bearTransform.position + Vector3.up * 0.5f; 
         }
+
+        // Save default state of Player Rig
+        if (playerRig != null)
+        {
+            initialRigPosition = playerRig.position;
+            initialRigRotation = playerRig.rotation;
+        }
     }
 
     void LateUpdate()
@@ -83,6 +97,8 @@ public class CameraRingController : MonoBehaviour
         // Logic for 3rd person camera (GRAPPLING MODE)
         if (isGrapplingMode && bearTransform != null && grappleController != null)
         {
+            wasInSpecialMode = true;
+
             Transform physicalLeftHand = manoReceiver.leftHandRoot;
             string physicalLeftGesture = manoReceiver.currentLeftGesture;
 
@@ -156,6 +172,8 @@ public class CameraRingController : MonoBehaviour
         // TRAVERSE MODE
         if (isTraverseMode)
         {
+            wasInSpecialMode = true;
+
             if (playerRig == null)
             {
                 Debug.LogWarning("playerRig is not assigned...");
@@ -191,20 +209,25 @@ public class CameraRingController : MonoBehaviour
                 {
                     // Holding and moving
 
-                    float initialYaw = Mathf.Atan2(initialLocalHandVector.z, initialLocalHandVector.x) * Mathf.Rad2Deg;
-                    float currentYaw = Mathf.Atan2(localHandVector.z, localHandVector.x) * Mathf.Rad2Deg;
-                    float deltaYaw   = Mathf.DeltaAngle(initialYaw, currentYaw);
+                    float initialYaw  = Mathf.Atan2(initialLocalHandVector.z, initialLocalHandVector.x) * Mathf.Rad2Deg;
+                    float currentYaw  = Mathf.Atan2(localHandVector.z, localHandVector.x) * Mathf.Rad2Deg;
+                    float rawDeltaYaw = Mathf.DeltaAngle(initialYaw, currentYaw);
 
-                    float initialRoll = Mathf.Atan2(initialLocalHandVector.y, initialLocalHandVector.x) * Mathf.Rad2Deg;
-                    float currentRoll = Mathf.Atan2(localHandVector.y, localHandVector.x) * Mathf.Rad2Deg;
-                    float deltaRoll   = Mathf.DeltaAngle(initialRoll, currentRoll);
+                    float initialRoll  = Mathf.Atan2(initialLocalHandVector.y, initialLocalHandVector.x) * Mathf.Rad2Deg;
+                    float currentRoll  = Mathf.Atan2(localHandVector.y, localHandVector.x) * Mathf.Rad2Deg;
+                    float rawDeltaRoll = Mathf.DeltaAngle(initialRoll, currentRoll);
 
-                    float deltaPitch = (localMidpoint.y - initialLocalMidpointY) * 100f;
+                    float rawDeltaPitch = (localMidpoint.y - initialLocalMidpointY) * 100f;
+
+                    // Apply Deadzone filter
+                    float activePitch = ApplyDeadzone(rawDeltaPitch, traverseDeadzone.x);
+                    float activeYaw   = ApplyDeadzone(rawDeltaYaw,   traverseDeadzone.y);
+                    float activeRoll  = ApplyDeadzone(rawDeltaRoll,  traverseDeadzone.z);
 
                     // Apply the sensitivity multiplier
-                    float finalPitch = deltaPitch * traverseSensitivity.x;
-                    float finalYaw   = deltaYaw   * traverseSensitivity.y;
-                    float finalRoll  = deltaRoll  * traverseSensitivity.z;
+                    float finalPitch = activePitch * traverseSensitivity.x;
+                    float finalYaw   = activeYaw   * traverseSensitivity.y;
+                    float finalRoll  = activeRoll  * traverseSensitivity.z;
 
                     // Apply the combined rotation to the level Rig
                     Quaternion steering3D = Quaternion.Euler(finalPitch, -finalYaw, finalRoll);
@@ -214,6 +237,25 @@ public class CameraRingController : MonoBehaviour
             else wasTraverseGripping = false;
 
             return; // Skip the ring logic
+        }
+
+        // ---< RING MODE >--- //
+
+        // Reset any special mode...
+        if (wasInSpecialMode)
+        {
+            playerRig.position = initialRigPosition;
+            playerRig.rotation = initialRigRotation;
+
+            wasTraverseGripping = false;
+
+            if (bearTransform != null)
+            {
+                grappleYaw    = bearTransform.eulerAngles.y;
+                lockedBaseYaw = grappleYaw;
+            }
+
+            wasInSpecialMode = false;
         }
 
         // Fetch the current gestures - BEHAVIOR ring
@@ -239,5 +281,14 @@ public class CameraRingController : MonoBehaviour
         Vector3 preservedRotation = transform.eulerAngles;
         preservedRotation.x       = startingPitch;
         transform.eulerAngles     = preservedRotation;
+    }
+
+    // ---< Helper Function >--- //
+    private float ApplyDeadzone(float rawDelta, float deadzone)
+    {
+        if (Mathf.Abs(rawDelta) <= deadzone) return 0f;
+        
+        // Subtract the deadzone amount so the movement starts smoothly from 0
+        return Mathf.Sign(rawDelta) * (Mathf.Abs(rawDelta) - deadzone);
     }
 }
