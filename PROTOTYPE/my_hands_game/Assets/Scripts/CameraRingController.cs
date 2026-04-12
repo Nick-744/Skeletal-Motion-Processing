@@ -21,20 +21,35 @@ public class CameraRingController : MonoBehaviour
     public Vector3 thirdPersonOffset = new Vector3(0, 0.3f, -1.0f);
     
     [Header("Grapple Steering Settings")]
-    public float steeringSmoothTime = 0.1f; 
+    public float steeringSmoothTime = 0.1f;
 
+    [Header("Traverse Settings")]
+    public bool isTraverseMode         = false;
+    [Tooltip("Sensitivity multiplier (XYZ).")]
+    public Vector3 traverseSensitivity = new Vector3(-0.25f, 2.0f, 2.0f);
+    [Tooltip("Drag the parent object containing both the Camera and Hands here.")]
+    public Transform playerRig;
+
+    // Ring variables
     // These will be automatically calculated in Start()...
     private float radius;
     private float height;
     private float currentAngle;
     private float startingPitch; // Camera's initial X-axis rotation
 
+    // Grapple variables
     private float grappleYaw    = 0f; 
     private float currentSteeringVelocity;
     private float lockedBaseYaw = 0f;
 
     private Vector3 smoothedLookTarget;
     private Vector3 lookTargetVelocity;
+
+    // Traverse Mode Variables
+    private bool wasTraverseGripping = false;
+    private Quaternion initialCameraRot;
+    private Vector3 initialLocalHandVector;
+    private float initialLocalMidpointY;
 
     void Start()
     {
@@ -134,6 +149,69 @@ public class CameraRingController : MonoBehaviour
                 // Make the bear to face the direction the camera turned
                 bearTransform.rotation = Quaternion.Euler(0, grappleYaw, 0);
             }
+
+            return; // Skip the ring logic
+        }
+
+        // TRAVERSE MODE
+        if (isTraverseMode)
+        {
+            if (playerRig == null)
+            {
+                Debug.LogWarning("playerRig is not assigned...");
+                return;
+            }
+
+            string leftGesture  = manoReceiver.currentLeftGesture;
+            string rightGesture = manoReceiver.currentRightGesture;
+            bool isGripping     = (leftGesture == "Closed_Fist" && rightGesture == "Closed_Fist");
+
+            if (isGripping)
+            {
+                // World space
+                Vector3 leftPos  = manoReceiver.leftHandRoot.position;
+                Vector3 rightPos = manoReceiver.rightHandRoot.position;
+
+                Vector3 handVector = rightPos - leftPos;
+                Vector3 midpoint   = (leftPos + rightPos) / 2f;
+
+                // Convert to Player Rig's Local Space
+                Vector3 localHandVector = playerRig.InverseTransformDirection(handVector);
+                Vector3 localMidpoint   = playerRig.InverseTransformPoint(midpoint);
+
+                if (!wasTraverseGripping)
+                {
+                    // Initial grab
+                    wasTraverseGripping    = true;
+                    initialCameraRot       = playerRig.rotation;
+                    initialLocalHandVector = localHandVector;
+                    initialLocalMidpointY  = localMidpoint.y;
+                }
+                else
+                {
+                    // Holding and moving
+
+                    float initialYaw = Mathf.Atan2(initialLocalHandVector.z, initialLocalHandVector.x) * Mathf.Rad2Deg;
+                    float currentYaw = Mathf.Atan2(localHandVector.z, localHandVector.x) * Mathf.Rad2Deg;
+                    float deltaYaw   = Mathf.DeltaAngle(initialYaw, currentYaw);
+
+                    float initialRoll = Mathf.Atan2(initialLocalHandVector.y, initialLocalHandVector.x) * Mathf.Rad2Deg;
+                    float currentRoll = Mathf.Atan2(localHandVector.y, localHandVector.x) * Mathf.Rad2Deg;
+                    float deltaRoll   = Mathf.DeltaAngle(initialRoll, currentRoll);
+
+                    float deltaPitch = (localMidpoint.y - initialLocalMidpointY) * 100f;
+
+                    // Apply the sensitivity multiplier
+                    float finalPitch = deltaPitch * traverseSensitivity.x;
+                    float finalYaw   = deltaYaw   * traverseSensitivity.y;
+                    float finalRoll  = deltaRoll  * traverseSensitivity.z;
+
+                    // Apply the combined rotation to the level Rig
+                    Quaternion steering3D = Quaternion.Euler(finalPitch, -finalYaw, finalRoll);
+                    playerRig.rotation    = initialCameraRot * steering3D;
+                }
+            }
+            else wasTraverseGripping = false;
 
             return; // Skip the ring logic
         }

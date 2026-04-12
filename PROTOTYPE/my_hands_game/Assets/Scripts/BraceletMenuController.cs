@@ -263,9 +263,13 @@ public class BraceletMenuController : MonoBehaviour
     private void ApplyCurrentMode()
     {
         // Reset everything
-        if (cameraController != null) cameraController.isGrapplingMode = false;
-        if (buildingGrabber  != null) buildingGrabber.enabled          = false;
-        if (handPointer      != null) handPointer.enabled              = false;
+        if (cameraController != null)
+        {
+            cameraController.isGrapplingMode = false;
+            cameraController.isTraverseMode  = false;
+        }
+        if (buildingGrabber  != null) buildingGrabber.enabled = false;
+        if (handPointer      != null) handPointer.enabled     = false;
 
         switch (currentActiveMode)
         {
@@ -274,7 +278,7 @@ public class BraceletMenuController : MonoBehaviour
                 break;
             
             case 0:
-                // TODO: Implement traverse mode here later...
+                if (cameraController != null) cameraController.isTraverseMode = true;
                 break;
             
             case 1:
