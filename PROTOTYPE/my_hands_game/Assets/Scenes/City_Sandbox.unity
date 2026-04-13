@@ -4721,6 +4721,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2139517966342556168, guid: d342ee9e52cb97443acb540cfe3e6ba2, type: 3}
+      propertyPath: traverseMoveSpeed
+      value: 0.008
+      objectReference: {fileID: 0}
+    - target: {fileID: 2139517966342556168, guid: d342ee9e52cb97443acb540cfe3e6ba2, type: 3}
       propertyPath: traverseDeadzone.x
       value: 5
       objectReference: {fileID: 0}

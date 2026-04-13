@@ -24,9 +24,11 @@ public class CameraRingController : MonoBehaviour
     public float steeringSmoothTime = 0.1f;
 
     [Header("Traverse Settings")]
-    public bool isTraverseMode         = false;
-    [Tooltip("Sensitivity multiplier (XYZ).")]
+    public bool isTraverseMode = false;
+    [Tooltip("Sensitivity multiplier (XYZ) - ROTATION")]
     public Vector3 traverseSensitivity = new Vector3(-0.25f, 2.0f, 2.0f);
+    [Tooltip("Speed multiplier - MOVEMENT")]
+    public float traverseMoveSpeed = 0.008f;
     [Tooltip("Deadzone threshold.")]
     public Vector3 traverseDeadzone = new Vector3(5.0f, 5.0f, 5.0f);
     [Tooltip("Drag the parent object containing both the Camera and Hands here.")]
@@ -47,11 +49,15 @@ public class CameraRingController : MonoBehaviour
     private Vector3 smoothedLookTarget;
     private Vector3 lookTargetVelocity;
 
-    // Traverse Mode Variables
-    private bool wasTraverseGripping = false;
+    // Traverse Mode Variables (Rotation)
+    private bool wasTraverseRotating = false;
     private Quaternion initialCameraRot;
     private Vector3 initialLocalHandVector;
     private float initialLocalMidpointY;
+
+    // Traverse Mode Variables (Movement)
+    private bool wasTraverseMoving = false;
+    private Vector3 initialSingleHandPos;
 
     // State Tracking
     private bool wasInSpecialMode = false;
@@ -113,12 +119,12 @@ public class CameraRingController : MonoBehaviour
 
             if (leftGrabbing && !rightGrabbing) 
             {
-                steeringHand   = physicalRightHand; 
+                steeringHand   = physicalRightHand;
                 targetLaserEnd = grappleController.rightLaserEnd; // Left is grabbing, right is free
             }
             else if (rightGrabbing && !leftGrabbing) 
             {
-                steeringHand   = physicalLeftHand;  
+                steeringHand   = physicalLeftHand;
                 targetLaserEnd = grappleController.leftLaserEnd; // Right is grabbing, left is free
             }
 
@@ -182,10 +188,17 @@ public class CameraRingController : MonoBehaviour
 
             string leftGesture  = manoReceiver.currentLeftGesture;
             string rightGesture = manoReceiver.currentRightGesture;
-            bool isGripping     = (leftGesture == "Closed_Fist" && rightGesture == "Closed_Fist");
+            
+            bool isLeftFist  = (leftGesture  == "Closed_Fist");
+            bool isRightFist = (rightGesture == "Closed_Fist");
 
-            if (isGripping)
+            bool isRotating = isLeftFist && isRightFist;
+            bool isMoving   = isLeftFist ^ isRightFist; // XOR
+
+            if (isRotating)
             {
+                wasTraverseMoving = false; // Reset movement state
+
                 // World space
                 Vector3 leftPos  = manoReceiver.leftHandRoot.position;
                 Vector3 rightPos = manoReceiver.rightHandRoot.position;
@@ -197,17 +210,17 @@ public class CameraRingController : MonoBehaviour
                 Vector3 localHandVector = playerRig.InverseTransformDirection(handVector);
                 Vector3 localMidpoint   = playerRig.InverseTransformPoint(midpoint);
 
-                if (!wasTraverseGripping)
+                if (!wasTraverseRotating)
                 {
                     // Initial grab
-                    wasTraverseGripping    = true;
+                    wasTraverseRotating    = true;
                     initialCameraRot       = playerRig.rotation;
                     initialLocalHandVector = localHandVector;
                     initialLocalMidpointY  = localMidpoint.y;
                 }
                 else
                 {
-                    // Holding and moving
+                    // Rotation
 
                     float initialYaw  = Mathf.Atan2(initialLocalHandVector.z, initialLocalHandVector.x) * Mathf.Rad2Deg;
                     float currentYaw  = Mathf.Atan2(localHandVector.z, localHandVector.x) * Mathf.Rad2Deg;
@@ -234,7 +247,45 @@ public class CameraRingController : MonoBehaviour
                     playerRig.rotation    = initialCameraRot * steering3D;
                 }
             }
-            else wasTraverseGripping = false;
+            else if (isMoving)
+            {
+                wasTraverseRotating = false; // Reset rotation state
+
+                // Determine hand
+                Transform activeHand = isLeftFist ? manoReceiver.leftHandRoot : manoReceiver.rightHandRoot;
+                Vector3 localHandPos = playerRig.InverseTransformPoint(activeHand.position);
+
+                if (!wasTraverseMoving)
+                {
+                    // Initial grab for movement
+                    wasTraverseMoving    = true;
+                    initialSingleHandPos = localHandPos;
+                }
+                else
+                {
+                    // Movement
+
+                    float rawDeltaX = (localHandPos.x - initialSingleHandPos.x) * 100f;
+                    float rawDeltaY = (localHandPos.y - initialSingleHandPos.y) * 100f;
+                    float rawDeltaZ = (localHandPos.z - initialSingleHandPos.z) * 100f;
+
+                    // Apply Deadzone filter
+                    float activeX = ApplyDeadzone(rawDeltaX, traverseDeadzone.x);
+                    float activeY = ApplyDeadzone(rawDeltaY, traverseDeadzone.y);
+                    float activeZ = ApplyDeadzone(rawDeltaZ, traverseDeadzone.z);
+                    
+                    Vector3 moveVelocity = new Vector3(activeX, activeY, activeZ) * traverseMoveSpeed;
+
+                    // Apply
+                    playerRig.Translate(moveVelocity * Time.deltaTime, Space.Self);
+                }
+            }
+            else 
+            {
+                // Reset states
+                wasTraverseRotating = false;
+                wasTraverseMoving   = false;
+            }
 
             return; // Skip the ring logic
         }
@@ -247,7 +298,8 @@ public class CameraRingController : MonoBehaviour
             playerRig.position = initialRigPosition;
             playerRig.rotation = initialRigRotation;
 
-            wasTraverseGripping = false;
+            wasTraverseRotating = false;
+            wasTraverseMoving   = false;
 
             if (bearTransform != null)
             {
