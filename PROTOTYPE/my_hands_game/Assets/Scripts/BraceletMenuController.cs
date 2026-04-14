@@ -57,7 +57,6 @@ public class BraceletMenuController : MonoBehaviour
     private float transitionSpeed = 5f;
 
     private GameObject braceletVisual;
-    private GameObject band;
     private GameObject[] balls = new GameObject[3];
 
     // Text Components
@@ -91,7 +90,7 @@ public class BraceletMenuController : MonoBehaviour
     {
         braceletVisual = new GameObject("Yellow_Wristband");
 
-        band = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        GameObject band = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         band.transform.SetParent(braceletVisual.transform);
         
         // Scale, rotation and position offset
@@ -265,6 +264,7 @@ public class BraceletMenuController : MonoBehaviour
         // Reset everything
         if (cameraController != null)
         {
+            cameraController.isRingMode      = false;
             cameraController.isGrapplingMode = false;
             cameraController.isTraverseMode  = false;
         }
@@ -275,6 +275,7 @@ public class BraceletMenuController : MonoBehaviour
         {
             case -1:
                 // Default Mode: Basic ring camera only...
+                if (cameraController != null) cameraController.isRingMode = true;
                 break;
             
             case 0:

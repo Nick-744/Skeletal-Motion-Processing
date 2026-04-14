@@ -10,6 +10,7 @@ public class CameraRingController : MonoBehaviour
     public BearGrappleController grappleController;
 
     [Header("Ring Settings")]
+    public bool isRingMode = true;
     // What the camera circles around
     public Vector3 centerPoint = new Vector3(1.0f, 0.0f, -1.0f);
     // How fast the camera moves around the ring
@@ -128,9 +129,7 @@ public class CameraRingController : MonoBehaviour
                 targetLaserEnd = grappleController.leftLaserEnd; // Right is grabbing, left is free
             }
 
-            bool isSteering = (steeringHand != null);
-
-            if (!isSteering)
+            if (steeringHand == null)
             {
                 // BEHAVIOR standing
                 transform.position = bearTransform.position + bearTransform.TransformDirection(thirdPersonOffset); // No smooth transition...
@@ -186,11 +185,8 @@ public class CameraRingController : MonoBehaviour
                 return;
             }
 
-            string leftGesture  = manoReceiver.currentLeftGesture;
-            string rightGesture = manoReceiver.currentRightGesture;
-            
-            bool isLeftFist  = (leftGesture  == "Closed_Fist");
-            bool isRightFist = (rightGesture == "Closed_Fist");
+            bool isLeftFist  = (manoReceiver.currentLeftGesture  == "Closed_Fist");
+            bool isRightFist = (manoReceiver.currentRightGesture == "Closed_Fist");
 
             bool isRotating = isLeftFist && isRightFist;
             bool isMoving   = isLeftFist ^ isRightFist; // XOR
@@ -291,48 +287,50 @@ public class CameraRingController : MonoBehaviour
         }
 
         // ---< RING MODE >--- //
-
-        // Reset any special mode...
-        if (wasInSpecialMode)
+        if (isRingMode)
         {
-            playerRig.position = initialRigPosition;
-            playerRig.rotation = initialRigRotation;
-
-            wasTraverseRotating = false;
-            wasTraverseMoving   = false;
-
-            if (bearTransform != null)
+            // Reset any special mode...
+            if (wasInSpecialMode)
             {
-                grappleYaw    = bearTransform.eulerAngles.y;
-                lockedBaseYaw = grappleYaw;
+                playerRig.position = initialRigPosition;
+                playerRig.rotation = initialRigRotation;
+
+                wasTraverseRotating = false;
+                wasTraverseMoving   = false;
+
+                if (bearTransform != null)
+                {
+                    grappleYaw    = bearTransform.eulerAngles.y;
+                    lockedBaseYaw = grappleYaw;
+                }
+
+                wasInSpecialMode = false;
             }
 
-            wasInSpecialMode = false;
+            // Fetch the current gestures - BEHAVIOR ring
+            string left  = manoReceiver.currentLeftGesture;
+            string right = manoReceiver.currentRightGesture;
+
+            // Determine movement based on gesture combinations
+            if (left == "Pointing_Up" && right == "Closed_Fist")
+                currentAngle -= moveSpeed * Time.deltaTime;
+            else if (left == "Closed_Fist" && right == "Pointing_Up")
+                currentAngle += moveSpeed * Time.deltaTime;
+            float angleRad = currentAngle * Mathf.Deg2Rad;
+
+            // Apply trigonometric formula for a circle on the X/Z plane
+            float newX = centerPoint.x + radius * Mathf.Cos(angleRad);
+            float newZ = centerPoint.z + radius * Mathf.Sin(angleRad);
+
+            // Update the camera's position + look at the center point
+            transform.position = new Vector3(newX, height, newZ);
+            transform.LookAt(centerPoint);
+
+            // Re-apply tilt to the X-axis
+            Vector3 preservedRotation = transform.eulerAngles;
+            preservedRotation.x       = startingPitch;
+            transform.eulerAngles     = preservedRotation;
         }
-
-        // Fetch the current gestures - BEHAVIOR ring
-        string left  = manoReceiver.currentLeftGesture;
-        string right = manoReceiver.currentRightGesture;
-
-        // Determine movement based on gesture combinations
-        if (left == "Pointing_Up" && right == "Closed_Fist")
-            currentAngle -= moveSpeed * Time.deltaTime;
-        else if (left == "Closed_Fist" && right == "Pointing_Up")
-            currentAngle += moveSpeed * Time.deltaTime;
-        float angleRad = currentAngle * Mathf.Deg2Rad;
-
-        // Apply trigonometric formula for a circle on the X/Z plane
-        float newX = centerPoint.x + radius * Mathf.Cos(angleRad);
-        float newZ = centerPoint.z + radius * Mathf.Sin(angleRad);
-
-        // Update the camera's position + look at the center point
-        transform.position = new Vector3(newX, height, newZ);
-        transform.LookAt(centerPoint);
-
-        // Re-apply tilt to the X-axis
-        Vector3 preservedRotation = transform.eulerAngles;
-        preservedRotation.x       = startingPitch;
-        transform.eulerAngles     = preservedRotation;
     }
 
     // ---< Helper Function >--- //

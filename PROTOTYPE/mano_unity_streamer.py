@@ -1,6 +1,7 @@
 import cv2
 import socket
 import json
+from time import time
 
 from MANOkinematics.config import (MANO_MODEL_PATH, MANO_MODEL_PATH_RIGHT)
 
@@ -38,6 +39,8 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
         while cap.isOpened():
             (success, frame) = cap.read()
             if not success: break;
+
+            current_time_ms = int(time() * 1000) # Timestamp in milliseconds
             
             frame = cv2.flip(frame, 1)
             tracker.detect(frame)
@@ -47,6 +50,8 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
             
             # Dictionary to hold the data for this frame
             frame_payload = {
+                'timestamp_ms': current_time_ms,
+                
                 'left_pose':  None,
                 'right_pose': None,
 

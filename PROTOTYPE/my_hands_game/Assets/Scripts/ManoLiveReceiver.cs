@@ -44,6 +44,8 @@ public class ManoLiveReceiver : MonoBehaviour
     // Data structure -> match Python JSON payload
     public class ManoPayload
     {
+        public long timestamp_ms    { get; set; }
+
         public float[][] left_pose  { get; set; }
         public float[][] right_pose { get; set; }
 
@@ -104,8 +106,13 @@ public class ManoLiveReceiver : MonoBehaviour
         {
             ManoPayload payload = JsonConvert.DeserializeObject<ManoPayload>(currentJson);
 
+            // Calculate Latency
+            long currentTimeMs   = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            long softwareLatency = currentTimeMs - payload.timestamp_ms;
+            //Debug.Log($"Frame Latency: {softwareLatency} ms");
+
             // ---< CROSS-MAPPING >--- //
-            
+
             // Apply Poses
             if (payload.right_pose != null) ApplyPose(leftBones,  payload.right_pose);
             if (payload.left_pose  != null) ApplyPose(rightBones, payload.left_pose);
