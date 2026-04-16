@@ -11,9 +11,14 @@ public class HandPointer : MonoBehaviour
     [Tooltip("The layers that the hand pointer can interact with.")]
     public LayerMask interactableLayers = ~0; // Default to everything
 
-    [Header("Aiming Style (Iron Man style or finger pointing)")]
+    [Header("Aiming Style Switching (Right Hand Gestures)")] // Iron Man style or finger pointing
+    public string palmLaserGesture    = "Thumb_Up";
+    public string pointerLaserGesture = "Thumb_Down";
+
+    [Header("Current Aiming Style")]
     public bool usePalmRepulsor = false;
-    
+    private bool wasUsingPalmRepulsor; // State machine
+
     [Header("Bone Indices (for palm calculation)")]
     public int wristIndex     = 0;
     public int indexBaseIndex = 1; // Index base joint
@@ -23,9 +28,12 @@ public class HandPointer : MonoBehaviour
     public bool HasValidTarget           { get; private set; }
     public bool IsConfirming             { get; private set; }
     public RaycastHit CurrentHit         { get; private set; }
+    public Vector3 PalmPosition          { get; private set; }
 
     [Header("Grappling Mode")]
     public bool isGrapplingMode = false;
+
+    [HideInInspector] public bool forceDisableLaser = false;
 
     // Visual markers
     private GameObject laserPointerMarker;
@@ -58,7 +66,23 @@ public class HandPointer : MonoBehaviour
         if (isGrapplingMode) { ResetLaser(); return; }
 
         string physicalLeftGesture     = manoReceiver.currentLeftGesture;
+        string physicalRightGesture    = manoReceiver.currentRightGesture;
         Transform[] physicalRightBones = manoReceiver.rightBones;
+
+        // Switch Laser Mode
+        if (physicalRightGesture == palmLaserGesture && !wasUsingPalmRepulsor)
+        {
+            usePalmRepulsor      = true;
+            wasUsingPalmRepulsor = true;
+        }
+        else if (physicalRightGesture == pointerLaserGesture && wasUsingPalmRepulsor)
+        {
+            usePalmRepulsor      = false;
+            wasUsingPalmRepulsor = false;
+        }
+
+        // Cheat...
+        if (manoReceiver.rightHandRoot != null) PalmPosition = manoReceiver.rightHandRoot.position;
 
         // Aiming Logic (Physical Right Hand)
         Vector3 rayOrigin    = Vector3.zero;
@@ -104,24 +128,20 @@ public class HandPointer : MonoBehaviour
         }
 
         // Execute Raycast
-        if (validAimBones)
+        if (!forceDisableLaser && validAimBones && Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hit, 20f, interactableLayers))
         {
-            if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hit, 20f, interactableLayers))
-            {
-                laserBeam.enabled = true;
+            laserBeam.enabled = true;
 
-                laserBeam.SetPosition(0, rayOrigin);
-                laserBeam.SetPosition(1, hit.point);
+            laserBeam.SetPosition(0, rayOrigin);
+            laserBeam.SetPosition(1, hit.point);
 
-                // Update properties
-                CurrentHit            = hit; 
-                CurrentTargetPosition = hit.point;
-                HasValidTarget        = true;
+            // Update properties
+            CurrentHit            = hit;
+            CurrentTargetPosition = hit.point;
+            HasValidTarget        = true;
 
-                laserPointerMarker.transform.position = CurrentTargetPosition;
-                laserPointerMarker.SetActive(true);
-            }
-            else ResetLaser();
+            laserPointerMarker.transform.position = CurrentTargetPosition;
+            laserPointerMarker.SetActive(true);
         }
         else ResetLaser();
 
