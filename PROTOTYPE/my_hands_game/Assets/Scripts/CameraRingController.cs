@@ -11,6 +11,8 @@ public class CameraRingController : MonoBehaviour
 
     [Header("Ring Settings")]
     public bool isRingMode = true;
+    [Tooltip("True -> Player Rig (camera + hands) orbits the center point.")]
+    public bool movePlayerRig = false;
     // What the camera circles around
     public Vector3 centerPoint = new Vector3(1.0f, 0.0f, -1.0f);
     // How fast the camera moves around the ring
@@ -67,12 +69,14 @@ public class CameraRingController : MonoBehaviour
 
     void Start()
     {
+        Transform targetTransform = (movePlayerRig && playerRig != null) ? playerRig : transform;
+
         // Grab the starting height
-        height = transform.position.y;
+        height = targetTransform.position.y;
 
         // Calculate the offset from the center point
-        float dx = transform.position.x - centerPoint.x;
-        float dz = transform.position.z - centerPoint.z;
+        float dx = targetTransform.position.x - centerPoint.x;
+        float dz = targetTransform.position.z - centerPoint.z;
 
         // Calculate the starting radius
         radius = Mathf.Sqrt(dx * dx + dz * dz);
@@ -80,7 +84,7 @@ public class CameraRingController : MonoBehaviour
         // Calculate the starting angle
         currentAngle = Mathf.Atan2(dz, dx) * Mathf.Rad2Deg;
 
-        startingPitch = transform.eulerAngles.x;
+        startingPitch = targetTransform.eulerAngles.x;
 
         if (bearTransform != null) 
         {
@@ -321,15 +325,30 @@ public class CameraRingController : MonoBehaviour
             // Apply trigonometric formula for a circle on the X/Z plane
             float newX = centerPoint.x + radius * Mathf.Cos(angleRad);
             float newZ = centerPoint.z + radius * Mathf.Sin(angleRad);
+            Vector3 calculatedPosition = new Vector3(newX, height, newZ);
 
-            // Update the camera's position + look at the center point
-            transform.position = new Vector3(newX, height, newZ);
-            transform.LookAt(centerPoint);
+            // Apply movement to the Rig or just the Camera
+            if (movePlayerRig && playerRig != null)
+            {
+                playerRig.position = calculatedPosition;
+                playerRig.LookAt(centerPoint);
 
-            // Re-apply tilt to the X-axis
-            Vector3 preservedRotation = transform.eulerAngles;
-            preservedRotation.x       = startingPitch;
-            transform.eulerAngles     = preservedRotation;
+                // Re-apply tilt to the X-axis for the rig
+                Vector3 preservedRotation = playerRig.eulerAngles;
+                preservedRotation.x       = startingPitch;
+                playerRig.eulerAngles     = preservedRotation;
+            }
+            else
+            {
+                // Update the camera's position + look at the center point
+                transform.position = calculatedPosition;
+                transform.LookAt(centerPoint);
+
+                // Re-apply tilt to the X-axis
+                Vector3 preservedRotation = transform.eulerAngles;
+                preservedRotation.x       = startingPitch;
+                transform.eulerAngles     = preservedRotation;
+            }
         }
     }
 
