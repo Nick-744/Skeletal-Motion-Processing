@@ -141,6 +141,7 @@ MonoBehaviour:
   damping: 10
   grabFalloffPower: 25
   minInfluence: 0.1
+  grabReleaseDelay: 0.25
 --- !u!1001 &391248292
 PrefabInstance:
   m_ObjectHideFlags: 0

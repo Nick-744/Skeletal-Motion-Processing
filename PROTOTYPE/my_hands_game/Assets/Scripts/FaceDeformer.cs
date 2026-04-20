@@ -16,7 +16,9 @@ public class FaceDeformer : MonoBehaviour
     [Tooltip("How quickly the pulling effect fades away as you get further from the exact point you grabbed.")]
     public float grabFalloffPower = 25f; // Gaussian Falloff
     [Tooltip("Minimum influence even at max distance.")]
-    public float minInfluence = 0.1f;
+    public float minInfluence     = 0.1f;
+    public float grabReleaseDelay = 0.25f; // Solve the lost grab problem...
+
     private float resolvedGrabRadius;
 
     // Mesh Data
@@ -32,15 +34,17 @@ public class FaceDeformer : MonoBehaviour
 
     // Left Hand State
     private bool isLeftGrabbing = false;
-    private int leftGrabIndex = -1;
+    private int leftGrabIndex   = -1;
     private Vector3 leftGrabOffset;
     private Vector3 leftInitialPos;
+    private float leftReleaseTimer = 0f;
 
     // Right Hand State
     private bool isRightGrabbing = false;
-    private int rightGrabIndex = -1;
+    private int rightGrabIndex   = -1;
     private Vector3 rightGrabOffset;
     private Vector3 rightInitialPos;
+    private float rightReleaseTimer = 0f;
 
     void Start()
     {
@@ -114,13 +118,13 @@ public class FaceDeformer : MonoBehaviour
         HandleHand(
             manoReceiver.currentLeftGesture, manoReceiver.leftHandRoot,
             ref isLeftGrabbing, ref leftGrabIndex, ref leftGrabOffset, ref leftInitialPos,
-            leftGrabWeights
+            leftGrabWeights, ref leftReleaseTimer
         );
 
         HandleHand(
             manoReceiver.currentRightGesture, manoReceiver.rightHandRoot,
             ref isRightGrabbing, ref rightGrabIndex, ref rightGrabOffset, ref rightInitialPos,
-            rightGrabWeights
+            rightGrabWeights, ref rightReleaseTimer
         );
 
         UpdateMeshPhysics();
@@ -130,13 +134,23 @@ public class FaceDeformer : MonoBehaviour
     private void HandleHand(
         string gesture, Transform handTransform,
         ref bool isGrabbing, ref int grabIndex, ref Vector3 grabOffset, ref Vector3 initialGrabPos,
-        float[] grabWeights)
+        float[] grabWeights, ref float releaseTimer)
     {
         if (handTransform == null) return;
 
-        bool isMakingFist = (gesture == "Closed_Fist");
+        bool isDetectedFist = (gesture == "Closed_Fist");
 
-        if (isMakingFist && !isGrabbing)
+        // ---< Lost Grab Problem Solution >--- //
+        if (isDetectedFist) releaseTimer = 0f;
+        bool isEffectivelyFist = isDetectedFist;
+        
+        if (isGrabbing && !isDetectedFist)
+        {
+            releaseTimer += Time.deltaTime; // Tracker lost - start counting...
+            if (releaseTimer < grabReleaseDelay) isEffectivelyFist = true;
+        }
+
+        if (isEffectivelyFist && !isGrabbing)
         {
             // GRAB START
             isGrabbing = true;
@@ -148,7 +162,7 @@ public class FaceDeformer : MonoBehaviour
 
             ComputeGrabWeights(grabIndex, grabWeights);
         }
-        else if (isMakingFist && isGrabbing)
+        else if (isEffectivelyFist && isGrabbing)
         {
             // HOLDING
             Vector3 localHandPos       = transform.InverseTransformPoint(handTransform.position);
@@ -161,11 +175,12 @@ public class FaceDeformer : MonoBehaviour
             for (int i = 0; i < targetVertices.Length; i++)
                 if (grabWeights[i] > 0f) targetVertices[i] += pullVector * grabWeights[i];
         }
-        else if (!isMakingFist && isGrabbing)
+        else if (!isEffectivelyFist && isGrabbing)
         {
             // RELEASE
-            isGrabbing = false;
-            grabIndex  = -1;
+            isGrabbing   = false;
+            grabIndex    = -1;
+            releaseTimer = 0f; // Clean up
         }
     }
 
