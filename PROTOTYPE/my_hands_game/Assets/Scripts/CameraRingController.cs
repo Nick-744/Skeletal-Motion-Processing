@@ -37,6 +37,8 @@ public class CameraRingController : MonoBehaviour
     [Tooltip("Drag the parent object containing both the Camera and Hands here.")]
     public Transform playerRig;
 
+    public bool IsActivelyRotatingRing { get; private set; } // State Tracking for external scripts
+
     // Ring variables
     // These will be automatically calculated in Start()...
     private float radius;
@@ -104,6 +106,9 @@ public class CameraRingController : MonoBehaviour
     void LateUpdate()
     {
         if (manoReceiver == null) return; // Ensure we have the receiver linked
+
+        // Reset the state every frame
+        IsActivelyRotatingRing = false;
 
         // Logic for 3rd person camera (GRAPPLING MODE)
         if (isGrapplingMode && bearTransform != null && grappleController != null)
@@ -317,9 +322,15 @@ public class CameraRingController : MonoBehaviour
 
             // Determine movement based on gesture combinations
             if (left == "Pointing_Up" && right == "Closed_Fist")
-                currentAngle -= moveSpeed * Time.deltaTime;
+            {
+                currentAngle          -= moveSpeed * Time.deltaTime;
+                IsActivelyRotatingRing = true;
+            }
             else if (left == "Closed_Fist" && right == "Pointing_Up")
-                currentAngle += moveSpeed * Time.deltaTime;
+            {
+                currentAngle          += moveSpeed * Time.deltaTime;
+                IsActivelyRotatingRing = true;
+            }
             float angleRad = currentAngle * Mathf.Deg2Rad;
 
             // Apply trigonometric formula for a circle on the X/Z plane

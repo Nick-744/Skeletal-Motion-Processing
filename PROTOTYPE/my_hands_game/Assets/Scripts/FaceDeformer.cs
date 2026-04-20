@@ -6,6 +6,8 @@ public class FaceDeformer : MonoBehaviour
     [Header("Dependencies")]
     [Tooltip("GameObject holding the ManoLiveReceiver script.")]
     public ManoLiveReceiver manoReceiver;
+    [Tooltip("GameObject holding the CameraRingController script.")]
+    public CameraRingController cameraController;
 
     [Header("Physics Settings")]
     public float springForce = 150f;
@@ -115,16 +117,19 @@ public class FaceDeformer : MonoBehaviour
         // Reset target shapes to the resting face (every frame)
         for (int i = 0; i < targetVertices.Length; i++) targetVertices[i] = originalVertices[i];
 
+        // Check if the camera is being rotated
+        bool blockGrab = cameraController != null && cameraController.IsActivelyRotatingRing;
+
         HandleHand(
             manoReceiver.currentLeftGesture, manoReceiver.leftHandRoot,
             ref isLeftGrabbing, ref leftGrabIndex, ref leftGrabOffset, ref leftInitialPos,
-            leftGrabWeights, ref leftReleaseTimer
+            leftGrabWeights, ref leftReleaseTimer, blockGrab
         );
 
         HandleHand(
             manoReceiver.currentRightGesture, manoReceiver.rightHandRoot,
             ref isRightGrabbing, ref rightGrabIndex, ref rightGrabOffset, ref rightInitialPos,
-            rightGrabWeights, ref rightReleaseTimer
+            rightGrabWeights, ref rightReleaseTimer, blockGrab
         );
 
         UpdateMeshPhysics();
@@ -134,9 +139,18 @@ public class FaceDeformer : MonoBehaviour
     private void HandleHand(
         string gesture, Transform handTransform,
         ref bool isGrabbing, ref int grabIndex, ref Vector3 grabOffset, ref Vector3 initialGrabPos,
-        float[] grabWeights, ref float releaseTimer)
+        float[] grabWeights, ref float releaseTimer, bool blockGrab)
     {
         if (handTransform == null) return;
+
+        if (blockGrab) // Skip grab logic if the camera is being rotated...
+        {
+            isGrabbing   = false;
+            grabIndex    = -1;
+            releaseTimer = 0f;
+
+            return;
+        }
 
         bool isDetectedFist = (gesture == "Closed_Fist");
 
