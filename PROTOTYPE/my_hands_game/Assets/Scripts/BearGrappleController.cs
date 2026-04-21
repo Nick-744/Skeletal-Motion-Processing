@@ -28,6 +28,7 @@ public class BearGrappleController : MonoBehaviour
 
     [Header("Grapple Physics & Ropes")]
     public float maxGrappleDistance = 6f;
+    public float ropeShootSpeed     = 50f;
     public string graspableTag      = "Graspable";
     public string targetObjectName  = "cube";
 
@@ -45,33 +46,50 @@ public class BearGrappleController : MonoBehaviour
     [Header("Detach Settings")]
     public float detachDelay = 0.3f;
 
-    [HideInInspector] public Vector3 leftLaserEnd;
-    [HideInInspector] public Vector3 rightLaserEnd;
+    [HideInInspector] public Vector3 leftLaserEnd  => leftArmState.laserEnd;
+    [HideInInspector] public Vector3 rightLaserEnd => rightArmState.laserEnd;
 
-    private float leftDetachTimer  = 0f;
-    private float rightDetachTimer = 0f;
-    
-    // Remember how long the rope was when we shot it!
-    private float leftInitialLength  = 0f;
-    private float rightInitialLength = 0f;
+    [HideInInspector] public SpringJoint leftJoint  => leftArmState.joint;
+    [HideInInspector] public SpringJoint rightJoint => rightArmState.joint;
 
-    // The automatically generated visuals
-    private GameObject leftGrappleBall;
-    private GameObject rightGrappleBall;
+    public class GrappleState
+    {
+        // The automatically generated visuals
+        public Transform arm;
+        public Transform grappleBall;
+        public GameObject targetMarker;
+        public LineRenderer aimLaser;
+
+        // Ropes and Joints
+        public SpringJoint joint;
+        public LineRenderer rope;
+
+        public Vector3 laserEnd;
+        public float detachTimer       = 0f;
+        public float initialRopeLength = 0f; // Remember how long the rope was when we shot it!
+        public float animProgress      = 0f;
+        public string prevGesture      = "";
+
+        public void CleanUp()
+        {
+            if (grappleBall  != null && grappleBall.gameObject.activeSelf) grappleBall.gameObject.SetActive(false);
+            if (targetMarker != null && targetMarker.activeSelf) targetMarker.SetActive(false);
+
+            // Clean up ropes and joints
+            if (joint        != null) Destroy(joint);
+            if (rope         != null) rope.enabled     = false;
+            if (aimLaser     != null) aimLaser.enabled = false;
+
+            prevGesture  = "";
+            detachTimer  = 0f;
+            animProgress = 0f;
+        }
+    }
+
+    private GrappleState leftArmState  = new GrappleState();
+    private GrappleState rightArmState = new GrappleState();
+
     private GameObject virtualCenter;
-    private GameObject leftTargetMarker;
-    private GameObject rightTargetMarker;
-    private LineRenderer leftAimLaser;
-    private LineRenderer rightAimLaser;
-
-    // Ropes and Joints
-    [HideInInspector] public SpringJoint leftJoint;
-    [HideInInspector] public SpringJoint rightJoint;
-    private LineRenderer leftRope;
-    private LineRenderer rightRope;
-
-    private string prevLeftGesture  = "";
-    private string prevRightGesture = "";
 
     private Rigidbody bearRb;
     private float originalDrag;
@@ -81,24 +99,30 @@ public class BearGrappleController : MonoBehaviour
         // INDEPENDENT virtual center
         virtualCenter = new GameObject("VirtualGrappleCenter");
 
-        rightGrappleBall = CreateDebugBall("RightGrappleBall", Color.red);
-        leftGrappleBall  = CreateDebugBall("LeftGrappleBall",  Color.blue);
+        leftArmState.arm  = leftArm;
+        rightArmState.arm = rightArm;
+
+        GameObject rightGrappleBall = CreateDebugBall("RightGrappleBall", Color.red);
+        GameObject leftGrappleBall  = CreateDebugBall("LeftGrappleBall",  Color.blue);
 
         // Parent to the independent virtual center
         rightGrappleBall.transform.SetParent(virtualCenter.transform);
         leftGrappleBall.transform.SetParent(virtualCenter.transform);
 
-        leftTargetMarker  = CreateDebugBall("LeftTargetMarker",  Color.yellow);
-        rightTargetMarker = CreateDebugBall("RightTargetMarker", Color.yellow);
-        leftTargetMarker.SetActive(false);
-        rightTargetMarker.SetActive(false);
+        leftArmState.grappleBall  = leftGrappleBall.transform;
+        rightArmState.grappleBall = rightGrappleBall.transform;
 
-        leftAimLaser  = CreateLaser("LeftAimLaser",  Color.yellow);
-        rightAimLaser = CreateLaser("RightAimLaser", Color.yellow);
+        leftArmState.targetMarker  = CreateDebugBall("LeftTargetMarker", Color.yellow);
+        rightArmState.targetMarker = CreateDebugBall("RightTargetMarker", Color.yellow);
+        leftArmState.targetMarker.SetActive(false);
+        rightArmState.targetMarker.SetActive(false);
+
+        leftArmState.aimLaser  = CreateLaser("LeftAimLaser", Color.yellow);
+        rightArmState.aimLaser = CreateLaser("RightAimLaser", Color.yellow);
 
         // Setup Visual Ropes
-        leftRope  = CreateRope("LeftRope",  Color.blue);
-        rightRope = CreateRope("RightRope", Color.red);
+        leftArmState.rope  = CreateRope("LeftRope", Color.blue);
+        rightArmState.rope = CreateRope("RightRope", Color.red);
 
         if (bearRoot != null)
         {
@@ -153,24 +177,8 @@ public class BearGrappleController : MonoBehaviour
     {
         if (!isGrapplingMode || manoReceiver == null || bearRoot == null)
         {
-            if (leftGrappleBall.activeSelf)  leftGrappleBall.SetActive(false);
-            if (rightGrappleBall.activeSelf) rightGrappleBall.SetActive(false);
-            if (leftTargetMarker.activeSelf)  leftTargetMarker.SetActive(false);
-            if (rightTargetMarker.activeSelf) rightTargetMarker.SetActive(false);
-
-            // Clean up ropes and joints
-            if (leftJoint  != null) Destroy(leftJoint);
-            if (rightJoint != null) Destroy(rightJoint);
-            if (leftRope   != null) leftRope.enabled  = false;
-            if (rightRope  != null) rightRope.enabled = false;
-
-            if (leftAimLaser  != null) leftAimLaser.enabled  = false;
-            if (rightAimLaser != null) rightAimLaser.enabled = false;
-
-            prevLeftGesture  = "";
-            prevRightGesture = "";
-            leftDetachTimer  = 0f;
-            rightDetachTimer = 0f;
+            leftArmState.CleanUp();
+            rightArmState.CleanUp();
 
             if (bearRb != null) bearRb.linearDamping = originalDrag;
 
@@ -178,11 +186,11 @@ public class BearGrappleController : MonoBehaviour
         }
 
         // Toggle debug visibility based on the checkbox
-        leftGrappleBall.GetComponent<Renderer>().enabled  = showDebugBalls;
-        rightGrappleBall.GetComponent<Renderer>().enabled = showDebugBalls;
+        leftArmState.grappleBall.GetComponent<Renderer>().enabled  = showDebugBalls;
+        rightArmState.grappleBall.GetComponent<Renderer>().enabled = showDebugBalls;
 
-        if (!leftGrappleBall.activeSelf)  leftGrappleBall.SetActive(true);
-        if (!rightGrappleBall.activeSelf) rightGrappleBall.SetActive(true);
+        if (!leftArmState.grappleBall.gameObject.activeSelf)  leftArmState.grappleBall.gameObject.SetActive(true);
+        if (!rightArmState.grappleBall.gameObject.activeSelf) rightArmState.grappleBall.gameObject.SetActive(true);
 
         // Position the virtual center based on the bear's root
         Quaternion cleanRotation         = Quaternion.Euler(0, bearRoot.eulerAngles.y, 0);
@@ -194,26 +202,26 @@ public class BearGrappleController : MonoBehaviour
         {
             Vector3 rawOffset = manoReceiver.leftHandRoot.localPosition;
             rawOffset.Scale(movementScale);
-            leftGrappleBall.transform.localPosition = rawOffset;
+            leftArmState.grappleBall.localPosition = rawOffset;
         }
 
         if (manoReceiver.rightHandRoot != null)
         {
             Vector3 rawOffset = manoReceiver.rightHandRoot.localPosition;
             rawOffset.Scale(movementScale);
-            rightGrappleBall.transform.localPosition = rawOffset;
+            rightArmState.grappleBall.localPosition = rawOffset;
         }
 
         // Arm aiming logic
         if (leftArm != null)
         {
-            leftArm.LookAt(leftGrappleBall.transform.position);
+            leftArm.LookAt(leftArmState.grappleBall.position);
             leftArm.Rotate(90f, 0f, 0f, Space.Self);
         }
 
         if (rightArm != null)
         {
-            rightArm.LookAt(rightGrappleBall.transform.position);
+            rightArm.LookAt(rightArmState.grappleBall.position);
             rightArm.Rotate(90f, 0f, 0f, Space.Self);
         }
 
@@ -221,134 +229,105 @@ public class BearGrappleController : MonoBehaviour
         string currentLeftGesture  = manoReceiver.currentLeftGesture;
         string currentRightGesture = manoReceiver.currentRightGesture;
 
-        HandleGrapple(
-            currentLeftGesture,
-            ref prevLeftGesture,
-            leftGrappleBall.transform,
-            leftArm,
-            ref leftJoint,
-            leftRope,
-            leftTargetMarker,
-            leftAimLaser,
-            ref leftDetachTimer,
-            rightJoint,
-            ref leftLaserEnd,
-            ref leftInitialLength
-        );
-        HandleGrapple(
-            currentRightGesture,
-            ref prevRightGesture,
-            rightGrappleBall.transform,
-            rightArm,
-            ref rightJoint,
-            rightRope,
-            rightTargetMarker,
-            rightAimLaser,
-            ref rightDetachTimer,
-            leftJoint,
-            ref rightLaserEnd,
-            ref rightInitialLength
-        );
+        HandleGrapple(currentLeftGesture, leftArmState, rightArmState.joint);
+        HandleGrapple(currentRightGesture, rightArmState, leftArmState.joint);
 
         if (bearRb != null)
         {
-            if (leftJoint != null || rightJoint != null)
-            {
+            if (leftArmState.joint != null || rightArmState.joint != null)
                 // Grappling...
-                bearRb.linearDamping  = grappleAirDrag;
-                bearRb.freezeRotation = false;
-            }
+                bearRb.linearDamping = grappleAirDrag;
             else
-            {
                 // NOT grappling...
                 bearRb.linearDamping = originalDrag;
+        }
+    }
 
-                // Freeze X and Z
-                bearRb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+    private void HandleGrapple(string currentGesture, GrappleState state, SpringJoint otherJoint)
+    {
+        Vector3 visualStartPos = state.arm != null ? state.arm.position : bearRoot.position;
+        Vector3 aimDirection   = (state.grappleBall.position - visualStartPos).normalized;
+
+        bool hitSomething      = Physics.SphereCast(state.grappleBall.position, aimAssistRadius, aimDirection, out RaycastHit hit, maxGrappleDistance);
+        bool isLookingAtTarget = hitSomething && (hit.collider.CompareTag(graspableTag) || hit.collider.gameObject.name.ToLower().Contains(targetObjectName.ToLower()));
+        state.laserEnd         = hitSomething ? hit.point : visualStartPos + (aimDirection * maxGrappleDistance);
+
+        UpdateAimVisuals(state.joint == null, visualStartPos, state.laserEnd, isLookingAtTarget, hit.point, state.aimLaser, state.targetMarker);
+
+        if (state.joint == null) TryAttachGrapple(currentGesture, state, isLookingAtTarget, hit.point);
+        else
+        {
+            TryDetachGrapple(currentGesture, otherJoint, state);
+            if (state.joint != null) UpdateRopeVisuals(state, visualStartPos, aimDirection);
+        }
+
+        if (currentGesture != "None") state.prevGesture = currentGesture;
+    }
+
+    private void UpdateAimVisuals(bool isAimPhase, Vector3 startPos, Vector3 endPos, bool hasTarget, Vector3 hitPoint, LineRenderer aimLaser, GameObject targetMarker)
+    {
+        aimLaser.enabled = isAimPhase;
+        targetMarker.SetActive(isAimPhase && hasTarget);
+
+        if (isAimPhase)
+        {
+            aimLaser.SetPosition(0, startPos);
+            aimLaser.SetPosition(1, endPos);
+            if (hasTarget) targetMarker.transform.position = hitPoint;
+        }
+    }
+
+    private void TryAttachGrapple(string currentGesture, GrappleState state, bool hasTarget, Vector3 hitPoint)
+    {
+        if (currentGesture == grabGesture && (state.prevGesture == swingGesture || state.prevGesture == "Open_Palm" || state.prevGesture == "Open_Hand"))
+        {
+            if (hasTarget)
+            {
+                state.joint = bearRoot.gameObject.AddComponent<SpringJoint>();
+                state.joint.autoConfigureConnectedAnchor = false;
+                state.joint.connectedAnchor              = hitPoint;
+
+                state.initialRopeLength = Vector3.Distance(bearRoot.position, hitPoint);
+                state.joint.maxDistance = state.initialRopeLength * 0.6f;
+                state.joint.minDistance = state.initialRopeLength * 0.3f;
+
+                state.joint.spring    = 30f;
+                state.joint.damper    = 20f;
+                state.joint.massScale = 3.0f;
+
+                state.rope.enabled = true;
+                state.detachTimer  = 0f;
+                state.animProgress = 0f;
             }
         }
     }
 
-    private void HandleGrapple(string currentGesture, ref string previousGesture, Transform grappleBall, Transform arm, ref SpringJoint joint, LineRenderer rope, GameObject targetMarker, LineRenderer aimLaser, ref float detachTimer, SpringJoint otherJoint, ref Vector3 laserEndOut, ref float initialRopeLength)
+    private void TryDetachGrapple(string currentGesture, SpringJoint otherJoint, GrappleState state)
     {
-        Vector3 visualStartPos = arm != null ? arm.position : bearRoot.position;
-        Vector3 aimDirection   = (grappleBall.position - visualStartPos).normalized;
-
-        bool hitSomething      = Physics.SphereCast(grappleBall.position, aimAssistRadius, aimDirection, out RaycastHit hit, maxGrappleDistance);
-        bool isLookingAtTarget = hitSomething && (hit.collider.CompareTag(graspableTag) || hit.collider.gameObject.name.ToLower().Contains(targetObjectName.ToLower()));
-
-        laserEndOut = hitSomething ? hit.point : visualStartPos + (aimDirection * maxGrappleDistance);
-
-        if (joint == null)
+        if (currentGesture == grabGesture) state.detachTimer = 0f;
+        else if (otherJoint != null)
         {
-            aimLaser.enabled = true;
-            aimLaser.SetPosition(0, visualStartPos);
-            aimLaser.SetPosition(1, laserEndOut);
-
-            if (isLookingAtTarget)
+            state.detachTimer += Time.deltaTime;
+            if (state.detachTimer >= detachDelay)
             {
-                targetMarker.SetActive(true);
-                targetMarker.transform.position = hit.point;
-            }
-            else targetMarker.SetActive(false);
-        }
-        else
-        {
-            aimLaser.enabled = false;
-            targetMarker.SetActive(false);
-        }
-
-        if (joint == null)
-        {
-            if (currentGesture == grabGesture && (previousGesture == swingGesture || previousGesture == "Open_Palm" || previousGesture == "Open_Hand"))
-            {
-                if (isLookingAtTarget)
-                {
-                    joint = bearRoot.gameObject.AddComponent<SpringJoint>();
-                    joint.autoConfigureConnectedAnchor = false;
-                    joint.connectedAnchor              = hit.point;
-
-                    // Save the length when we first hit the target
-                    initialRopeLength = Vector3.Distance(bearRoot.position, hit.point);
-
-                    joint.maxDistance = initialRopeLength * 0.6f;
-                    joint.minDistance = initialRopeLength * 0.3f;
-
-                    // Spring settings
-                    joint.spring    = 30f;
-                    joint.damper    = 20f;
-                    joint.massScale = 3.0f;
-
-                    rope.enabled = true;
-                    detachTimer  = 0f;
-                }
+                Destroy(state.joint);
+                state.rope.enabled = false;
+                state.detachTimer  = 0f;
             }
         }
-        else
+        else state.detachTimer = 0f;
+    }
+
+    private void UpdateRopeVisuals(GrappleState state, Vector3 startPos, Vector3 aimDirection)
+    {
+        if (state.rope.enabled)
         {
-            if (currentGesture == grabGesture) detachTimer = 0f;
-            else
-            {
-                if (otherJoint != null)
-                {
-                    detachTimer += Time.deltaTime;
-                    if (detachTimer >= detachDelay)
-                    {
-                        Destroy(joint);
-                        rope.enabled = false;
-                        detachTimer  = 0f;
-                    }
-                }
-                else detachTimer = 0f;
-            }
+            state.animProgress  += Time.deltaTime * (ropeShootSpeed / Mathf.Max(0.1f, state.initialRopeLength));
+            Vector3 currentStart = startPos + (aimDirection * 0.15f);
+            Vector3 currentEnd   = Vector3.Lerp(currentStart, state.joint.connectedAnchor, Mathf.Clamp01(state.animProgress));
 
-            if (rope.enabled)
-            {
-                rope.SetPosition(0, visualStartPos + (aimDirection * 0.15f));
-                rope.SetPosition(1, joint.connectedAnchor);
-            }
+            state.rope.SetPosition(0, currentStart);
+            state.rope.SetPosition(1, currentEnd);
         }
-
-        if (currentGesture != "None") previousGesture = currentGesture;
     }
 }
