@@ -29,6 +29,7 @@ public class BearGrappleController : MonoBehaviour
     [Header("Grapple Physics & Ropes")]
     public float maxGrappleDistance = 6f;
     public string graspableTag      = "Graspable";
+    public string targetObjectName  = "cube";
 
     [Tooltip("Makes the raycast thicker (Aim Assist)")]
     public float aimAssistRadius = 0.8f;
@@ -252,9 +253,19 @@ public class BearGrappleController : MonoBehaviour
         if (bearRb != null)
         {
             if (leftJoint != null || rightJoint != null)
-                bearRb.linearDamping = grappleAirDrag;
+            {
+                // Grappling...
+                bearRb.linearDamping  = grappleAirDrag;
+                bearRb.freezeRotation = false;
+            }
             else
+            {
+                // NOT grappling...
                 bearRb.linearDamping = originalDrag;
+
+                // Freeze X and Z
+                bearRb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+            }
         }
     }
 
@@ -264,7 +275,7 @@ public class BearGrappleController : MonoBehaviour
         Vector3 aimDirection   = (grappleBall.position - visualStartPos).normalized;
 
         bool hitSomething      = Physics.SphereCast(grappleBall.position, aimAssistRadius, aimDirection, out RaycastHit hit, maxGrappleDistance);
-        bool isLookingAtTarget = hitSomething && hit.collider.CompareTag(graspableTag);
+        bool isLookingAtTarget = hitSomething && (hit.collider.CompareTag(graspableTag) || hit.collider.gameObject.name.ToLower().Contains(targetObjectName.ToLower()));
 
         laserEndOut = hitSomething ? hit.point : visualStartPos + (aimDirection * maxGrappleDistance);
 
@@ -333,7 +344,7 @@ public class BearGrappleController : MonoBehaviour
 
             if (rope.enabled)
             {
-                rope.SetPosition(0, visualStartPos + (aimDirection * 0.2f));
+                rope.SetPosition(0, visualStartPos + (aimDirection * 0.15f));
                 rope.SetPosition(1, joint.connectedAnchor);
             }
         }

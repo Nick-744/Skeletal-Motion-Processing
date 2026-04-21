@@ -1530,7 +1530,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BearGrappleController
   manoReceiver: {fileID: 968769119}
-  bearRoot: {fileID: 1389613769}
+  bearRoot: {fileID: 1271913837}
   leftArm: {fileID: 856123307}
   rightArm: {fileID: 1416417456}
   isGrapplingMode: 0
@@ -1540,6 +1540,7 @@ MonoBehaviour:
   movementScale: {x: 90, y: -90, z: -90}
   maxGrappleDistance: 6
   graspableTag: Graspable
+  targetObjectName: cube
   aimAssistRadius: 0.8
   grappleAirDrag: 30
   grabGesture: Closed_Fist
