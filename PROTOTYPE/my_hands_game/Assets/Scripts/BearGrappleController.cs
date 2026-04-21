@@ -28,7 +28,7 @@ public class BearGrappleController : MonoBehaviour
 
     [Header("Grapple Physics & Ropes")]
     public float maxGrappleDistance = 6f;
-    public float ropeShootSpeed     = 50f;
+    public float ropeShootSpeed     = 10f;
     public string graspableTag      = "Graspable";
     public string targetObjectName  = "cube";
 
@@ -37,18 +37,17 @@ public class BearGrappleController : MonoBehaviour
 
     [Header("Rigid Rope Physics")]
     [Tooltip("Air resistance to apply while holding a rope.")]
-    public float grappleAirDrag = 30f;
+    public float grappleAirDrag = 0.4f;
 
     [Header("Gestures")]
-    public string grabGesture  = "Closed_Fist";
-    public string swingGesture = "Open_Hand";
+    public string grabGesture = "Closed_Fist";
 
     [Header("Detach Settings")]
     public float detachDelay = 0.3f;
 
+    // Expose for external use...
     [HideInInspector] public Vector3 leftLaserEnd  => leftArmState.laserEnd;
     [HideInInspector] public Vector3 rightLaserEnd => rightArmState.laserEnd;
-
     [HideInInspector] public SpringJoint leftJoint  => leftArmState.joint;
     [HideInInspector] public SpringJoint rightJoint => rightArmState.joint;
 
@@ -68,7 +67,6 @@ public class BearGrappleController : MonoBehaviour
         public float detachTimer       = 0f;
         public float initialRopeLength = 0f; // Remember how long the rope was when we shot it!
         public float animProgress      = 0f;
-        public string prevGesture      = "";
 
         public void CleanUp()
         {
@@ -80,7 +78,6 @@ public class BearGrappleController : MonoBehaviour
             if (rope         != null) rope.enabled     = false;
             if (aimLaser     != null) aimLaser.enabled = false;
 
-            prevGesture  = "";
             detachTimer  = 0f;
             animProgress = 0f;
         }
@@ -254,14 +251,13 @@ public class BearGrappleController : MonoBehaviour
 
         UpdateAimVisuals(state.joint == null, visualStartPos, state.laserEnd, isLookingAtTarget, hit.point, state.aimLaser, state.targetMarker);
 
-        if (state.joint == null) TryAttachGrapple(currentGesture, state, isLookingAtTarget, hit.point);
+        if (state.joint == null)
+            TryAttachGrapple(currentGesture, state, isLookingAtTarget, hit.point);
         else
         {
             TryDetachGrapple(currentGesture, otherJoint, state);
             if (state.joint != null) UpdateRopeVisuals(state, visualStartPos, aimDirection);
         }
-
-        if (currentGesture != "None") state.prevGesture = currentGesture;
     }
 
     private void UpdateAimVisuals(bool isAimPhase, Vector3 startPos, Vector3 endPos, bool hasTarget, Vector3 hitPoint, LineRenderer aimLaser, GameObject targetMarker)
@@ -279,7 +275,7 @@ public class BearGrappleController : MonoBehaviour
 
     private void TryAttachGrapple(string currentGesture, GrappleState state, bool hasTarget, Vector3 hitPoint)
     {
-        if (currentGesture == grabGesture && (state.prevGesture == swingGesture || state.prevGesture == "Open_Palm" || state.prevGesture == "Open_Hand"))
+        if (currentGesture == grabGesture)
         {
             if (hasTarget)
             {
