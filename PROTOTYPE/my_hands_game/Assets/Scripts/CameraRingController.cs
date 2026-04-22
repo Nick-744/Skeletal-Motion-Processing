@@ -177,7 +177,9 @@ public class CameraRingController : MonoBehaviour
                 transform.LookAt(smoothedLookTarget);
 
                 // Make the bear to face the direction the camera turned
-                bearTransform.rotation = Quaternion.Euler(0, grappleYaw, 0);
+                // bearTransform.rotation = Quaternion.Euler(0, grappleYaw, 0);
+                // I have spent a ridiculous amount of time trying to figure out why the f*** the rotation
+                // of the bear was all over the place while updating the BearGrappleController.cs script...
             }
 
             return; // Skip the ring logic

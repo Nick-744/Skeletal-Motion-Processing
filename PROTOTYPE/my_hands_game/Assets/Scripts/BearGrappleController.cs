@@ -68,6 +68,7 @@ public class BearGrappleController : MonoBehaviour
         public float detachTimer       = 0f;
         public float initialRopeLength = 0f; // Remember how long the rope was when we shot it!
         public float animProgress      = 0f;
+        public Vector3 lockedForward   = Vector3.zero;
 
         public void CleanUp()
         {
@@ -75,12 +76,13 @@ public class BearGrappleController : MonoBehaviour
             if (targetMarker != null && targetMarker.activeSelf) targetMarker.SetActive(false);
 
             // Clean up ropes and joints
-            if (joint        != null) Destroy(joint);
-            if (rope         != null) rope.enabled     = false;
-            if (aimLaser     != null) aimLaser.enabled = false;
+            if (joint    != null) Destroy(joint);
+            if (rope     != null) rope.enabled     = false;
+            if (aimLaser != null) aimLaser.enabled = false;
 
-            detachTimer  = 0f;
-            animProgress = 0f;
+            detachTimer   = 0f;
+            animProgress  = 0f;
+            lockedForward = Vector3.zero;
         }
     }
 
@@ -113,16 +115,16 @@ public class BearGrappleController : MonoBehaviour
         leftArmState.grappleBall  = leftGrappleBall.transform;
         rightArmState.grappleBall = rightGrappleBall.transform;
 
-        leftArmState.targetMarker  = CreateDebugBall("LeftTargetMarker", Color.yellow);
+        leftArmState.targetMarker  = CreateDebugBall("LeftTargetMarker",  Color.yellow);
         rightArmState.targetMarker = CreateDebugBall("RightTargetMarker", Color.yellow);
         leftArmState.targetMarker.SetActive(false);
         rightArmState.targetMarker.SetActive(false);
 
-        leftArmState.aimLaser  = CreateLaser("LeftAimLaser", Color.yellow);
+        leftArmState.aimLaser  = CreateLaser("LeftAimLaser",  Color.yellow);
         rightArmState.aimLaser = CreateLaser("RightAimLaser", Color.yellow);
 
         // Setup Visual Ropes
-        leftArmState.rope  = CreateRope("LeftRope", Color.blue);
+        leftArmState.rope  = CreateRope("LeftRope",  Color.blue);
         rightArmState.rope = CreateRope("RightRope", Color.red);
 
         if (bearRoot != null)
@@ -246,8 +248,20 @@ public class BearGrappleController : MonoBehaviour
         if (bearRb != null)
         {
             if (leftArmState.joint != null || rightArmState.joint != null)
+            {
                 // Grappling...
                 bearRb.linearDamping = grappleAirDrag;
+
+                // Figure out which arm is currently pulling the bear
+                GrappleState activeState = leftArmState.joint != null ? leftArmState : rightArmState;
+
+                // Force the bear to face the locked direction
+                if (activeState.lockedForward != Vector3.zero)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(activeState.lockedForward);
+                    bearRoot.rotation    = Quaternion.Slerp(bearRoot.rotation, targetRot, Time.deltaTime * 10f);
+                }
+            }
             else
                 // NOT grappling...
                 bearRb.linearDamping = originalDrag;
@@ -295,6 +309,12 @@ public class BearGrappleController : MonoBehaviour
         {
             if (hasTarget)
             {
+                // Calculate and LOCK the "forward" direction
+                Vector3 lookDirection = hitPoint - bearRoot.position;
+                lookDirection.y       = 0f;
+                if (lookDirection.sqrMagnitude > 0.001f) state.lockedForward = lookDirection.normalized;
+
+                // Setup Spring Joint
                 state.joint = bearRoot.gameObject.AddComponent<SpringJoint>();
                 state.joint.autoConfigureConnectedAnchor = false;
                 state.joint.connectedAnchor              = hitPoint;
@@ -335,8 +355,8 @@ public class BearGrappleController : MonoBehaviour
     {
         if (state.rope.enabled)
         {
-            state.animProgress  += Time.deltaTime * (ropeShootSpeed / Mathf.Max(0.1f, state.initialRopeLength));
-            Vector3 currentEnd   = Vector3.Lerp(startPos, state.joint.connectedAnchor, Mathf.Clamp01(state.animProgress));
+            state.animProgress += Time.deltaTime * (ropeShootSpeed / Mathf.Max(0.1f, state.initialRopeLength));
+            Vector3 currentEnd  = Vector3.Lerp(startPos, state.joint.connectedAnchor, Mathf.Clamp01(state.animProgress));
 
             state.rope.SetPosition(0, startPos);
             state.rope.SetPosition(1, currentEnd);

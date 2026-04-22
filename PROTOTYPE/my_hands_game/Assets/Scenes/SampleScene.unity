@@ -1591,7 +1591,7 @@ MonoBehaviour:
   leftArm: {fileID: 856123307}
   rightArm: {fileID: 1416417456}
   isGrapplingMode: 0
-  showDebugBalls: 1
+  showDebugBalls: 0
   ballSize: 0.15
   centerOffset: {x: -0.5, y: 1, z: -0.7}
   movementScale: {x: 90, y: -90, z: -90}
@@ -1611,7 +1611,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1271913834}
   serializedVersion: 5
-  m_Mass: 1
+  m_Mass: 3
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
