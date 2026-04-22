@@ -1591,7 +1591,7 @@ MonoBehaviour:
   leftArm: {fileID: 856123307}
   rightArm: {fileID: 1416417456}
   isGrapplingMode: 0
-  showDebugBalls: 0
+  showDebugBalls: 1
   ballSize: 0.15
   centerOffset: {x: -0.5, y: 1, z: -0.7}
   movementScale: {x: 90, y: -90, z: -90}
@@ -1600,7 +1600,7 @@ MonoBehaviour:
   graspableTag: Graspable
   targetObjectName: cube
   aimAssistRadius: 0.8
-  grappleAirDrag: 0.4
+  grappleAirDrag: 0.1
   grabGesture: Closed_Fist
   detachDelay: 0.3
 --- !u!54 &1271913839
@@ -1628,7 +1628,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 1
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 2
 --- !u!136 &1271913840
 CapsuleCollider:

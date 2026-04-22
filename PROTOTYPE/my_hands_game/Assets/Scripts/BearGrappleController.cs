@@ -55,6 +55,7 @@ public class BearGrappleController : MonoBehaviour
     {
         // The automatically generated visuals
         public Transform arm;
+        public Quaternion startRot;
         public Transform grappleBall;
         public GameObject targetMarker;
         public LineRenderer aimLaser;
@@ -98,6 +99,9 @@ public class BearGrappleController : MonoBehaviour
 
         leftArmState.arm  = leftArm;
         rightArmState.arm = rightArm;
+        
+        leftArmState.startRot  = leftArm.localRotation;
+        rightArmState.startRot = rightArm.localRotation;
 
         GameObject rightGrappleBall = CreateDebugBall("RightGrappleBall", Color.red);
         GameObject leftGrappleBall  = CreateDebugBall("LeftGrappleBall",  Color.blue);
@@ -212,14 +216,24 @@ public class BearGrappleController : MonoBehaviour
         // Arm aiming logic
         if (leftArm != null)
         {
-            leftArm.LookAt(leftArmState.grappleBall.position);
-            leftArm.Rotate(90f, 0f, 0f, Space.Self);
+            if (leftArmState.joint != null)
+                leftArm.localRotation = Quaternion.Lerp(leftArm.localRotation, leftArmState.startRot * Quaternion.Euler(0, 0, -80f), Time.deltaTime * 8f);
+            else
+            {
+                leftArm.LookAt(leftArmState.grappleBall.position);
+                leftArm.Rotate(90f, 0f, 0f, Space.Self);
+            }
         }
 
         if (rightArm != null)
         {
-            rightArm.LookAt(rightArmState.grappleBall.position);
-            rightArm.Rotate(90f, 0f, 0f, Space.Self);
+            if (rightArmState.joint != null)
+                rightArm.localRotation = Quaternion.Lerp(rightArm.localRotation, rightArmState.startRot * Quaternion.Euler(0, 0, 80f), Time.deltaTime * 8f);
+            else
+            {
+                rightArm.LookAt(rightArmState.grappleBall.position);
+                rightArm.Rotate(90f, 0f, 0f, Space.Self);
+            }
         }
 
         // Grappling logic
@@ -251,12 +265,14 @@ public class BearGrappleController : MonoBehaviour
 
         UpdateAimVisuals(state.joint == null, visualStartPos, state.laserEnd, isLookingAtTarget, hit.point, state.aimLaser, state.targetMarker);
 
+        Vector3 anchorWorldPos = visualStartPos + (state.arm.up * 0.15f); // Tip of the bear's hand!
+
         if (state.joint == null)
-            TryAttachGrapple(currentGesture, state, isLookingAtTarget, hit.point);
+            TryAttachGrapple(currentGesture, state, isLookingAtTarget, hit.point, anchorWorldPos);
         else
         {
             TryDetachGrapple(currentGesture, otherJoint, state);
-            if (state.joint != null) UpdateRopeVisuals(state, visualStartPos, aimDirection);
+            if (state.joint != null) UpdateRopeVisuals(state, anchorWorldPos, aimDirection);
         }
     }
 
@@ -273,7 +289,7 @@ public class BearGrappleController : MonoBehaviour
         }
     }
 
-    private void TryAttachGrapple(string currentGesture, GrappleState state, bool hasTarget, Vector3 hitPoint)
+    private void TryAttachGrapple(string currentGesture, GrappleState state, bool hasTarget, Vector3 hitPoint, Vector3 anchorWorldPos)
     {
         if (currentGesture == grabGesture)
         {
@@ -282,6 +298,7 @@ public class BearGrappleController : MonoBehaviour
                 state.joint = bearRoot.gameObject.AddComponent<SpringJoint>();
                 state.joint.autoConfigureConnectedAnchor = false;
                 state.joint.connectedAnchor              = hitPoint;
+                state.joint.anchor                       = bearRoot.InverseTransformPoint(anchorWorldPos);
 
                 state.initialRopeLength = Vector3.Distance(bearRoot.position, hitPoint);
                 state.joint.maxDistance = state.initialRopeLength * 0.6f;
@@ -319,10 +336,9 @@ public class BearGrappleController : MonoBehaviour
         if (state.rope.enabled)
         {
             state.animProgress  += Time.deltaTime * (ropeShootSpeed / Mathf.Max(0.1f, state.initialRopeLength));
-            Vector3 currentStart = startPos + (aimDirection * 0.15f);
-            Vector3 currentEnd   = Vector3.Lerp(currentStart, state.joint.connectedAnchor, Mathf.Clamp01(state.animProgress));
+            Vector3 currentEnd   = Vector3.Lerp(startPos, state.joint.connectedAnchor, Mathf.Clamp01(state.animProgress));
 
-            state.rope.SetPosition(0, currentStart);
+            state.rope.SetPosition(0, startPos);
             state.rope.SetPosition(1, currentEnd);
         }
     }
