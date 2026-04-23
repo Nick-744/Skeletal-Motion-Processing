@@ -1,4 +1,5 @@
 using UnityEngine;
+using Bhaptics.SDK2;
 
 public class BearGrappleController : MonoBehaviour
 {
@@ -390,6 +391,47 @@ public class BearGrappleController : MonoBehaviour
             }
 
             Debug.Log($"Detect Hit: {hitCategory} against {collision.gameObject.name}");
+            TriggerHapticFeedback(hitCategory);
         }
+    }
+
+    private void TriggerHapticFeedback(string hitCategory)
+    {
+        // Indices 0-19 are the Front motors
+        // Indices 20-39 are the Back motors
+        int[] vestMotors = new int[40];
+        int intensity    = 6;
+        int duration     = 300; // milliseconds
+
+        switch (hitCategory)
+        {
+            case "Front hit":
+                for (int i = 0; i < 20; i++) vestMotors[i] = intensity;
+                break;
+
+            case "Back hit":
+                for (int i = 20; i < 40; i++) vestMotors[i] = intensity;
+                break;
+
+            case "Left side hit":
+                // Left edge motors
+                for (int r = 0; r < 5; r++)
+                {
+                    vestMotors[r * 4]      = intensity; // Front left edge
+                    vestMotors[20 + r * 4] = intensity; // Back left edge
+                }
+                break;
+
+            case "Right side hit":
+                // Right edge motors
+                for (int r = 0; r < 5; r++)
+                {
+                    vestMotors[(r * 4) + 3]      = intensity; // Front right edge
+                    vestMotors[20 + (r * 4) + 3] = intensity; // Back right edge
+                }
+                break;
+        }
+
+        BhapticsLibrary.PlayMotors((int)PositionType.Vest, vestMotors, duration);
     }
 }
