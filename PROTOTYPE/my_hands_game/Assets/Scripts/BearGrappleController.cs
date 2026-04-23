@@ -362,4 +362,34 @@ public class BearGrappleController : MonoBehaviour
             state.rope.SetPosition(1, currentEnd);
         }
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.contactCount > 0)
+        {
+            ContactPoint contact = collision.GetContact(0);
+            Transform root       = bearRoot != null ? bearRoot : transform;
+            
+            // Calculate the direction from bear's center to point of contact
+            Vector3 hitDirection = (contact.point - root.position).normalized;
+            
+            // Compare hit direction against bear's local forward and right axes
+            float dotForward = Vector3.Dot(root.forward, hitDirection);
+            float dotRight   = Vector3.Dot(root.right, hitDirection);
+
+            string hitCategory = "";
+            if (Mathf.Abs(dotForward) > Mathf.Abs(dotRight))
+            {
+                if (dotForward > 0) hitCategory = "Front hit";
+                else                hitCategory = "Back hit";
+            }
+            else
+            {
+                if (dotRight > 0) hitCategory = "Right side hit";
+                else              hitCategory = "Left side hit";
+            }
+
+            Debug.Log($"Detect Hit: {hitCategory} against {collision.gameObject.name}");
+        }
+    }
 }
