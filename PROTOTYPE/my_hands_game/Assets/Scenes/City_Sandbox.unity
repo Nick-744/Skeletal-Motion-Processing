@@ -2213,7 +2213,7 @@ PrefabInstance:
       addedObject: {fileID: 758009039}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 03cba8eee4a39a5499293765baede9dd, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 758009038}
+      addedObject: {fileID: 758009042}
   m_SourcePrefab: {fileID: 100100000, guid: 03cba8eee4a39a5499293765baede9dd, type: 3}
 --- !u!1 &758009034 stripped
 GameObject:
@@ -2235,39 +2235,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8207447016532182715, guid: 03cba8eee4a39a5499293765baede9dd, type: 3}
   m_PrefabInstance: {fileID: 758009033}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &758009038
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 758009034}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4a4cc2a85d889474bbd3c7f52515c764, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BearGrappleController
-  manoReceiver: {fileID: 2123913870}
-  bearRoot: {fileID: 758009041}
-  leftArm: {fileID: 758009036}
-  rightArm: {fileID: 758009035}
-  isGrapplingMode: 0
-  showDebugBalls: 0
-  ballSize: 0.15
-  centerOffset: {x: -0.5, y: 1, z: -0.7}
-  movementScale: {x: 90, y: -90, z: -90}
-  maxGrappleDistance: 6
-  graspableTag: Graspable
-  targetObjectName: cube
-  aimAssistRadius: 0.8
-  grappleAirDrag: 30
-  grabGesture: Closed_Fist
-  swingGesture: Open_Hand
-  detachDelay: 0.3
-  leftLaserEnd: {x: 0, y: 0, z: 0}
-  rightLaserEnd: {x: 0, y: 0, z: 0}
-  leftJoint: {fileID: 0}
-  rightJoint: {fileID: 0}
 --- !u!136 &758009039
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2299,7 +2266,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 758009034}
   serializedVersion: 5
-  m_Mass: 1
+  m_Mass: 3
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -2316,13 +2283,46 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 1
-  m_Constraints: 0
+  m_Constraints: 112
   m_CollisionDetection: 2
 --- !u!4 &758009041 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 03cba8eee4a39a5499293765baede9dd, type: 3}
   m_PrefabInstance: {fileID: 758009033}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &758009042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 758009034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4c4bb17b5b2ffc4188c6e6514ad6fac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BearODMController
+  manoReceiver: {fileID: 2123913870}
+  bearRoot: {fileID: 758009041}
+  leftArm: {fileID: 758009036}
+  rightArm: {fileID: 758009035}
+  showDebugBalls: 0
+  ballSize: 0.15
+  centerOffset: {x: -0.5, y: 1, z: -0.7}
+  movementScale: {x: 90, y: -90, z: -90}
+  maxGrappleDistance: 6
+  ropeShootSpeed: 10
+  graspableTag: Graspable
+  targetObjectName: cube
+  aimAssistRadius: 0
+  grappleAirDrag: 0.1
+  grabGesture: Closed_Fist
+  detachDelay: 0.3
+  isODMMode: 0
+  winchingSpeed: 5
+  odmSteeringSensitivity: 2
+  odmSlowMotionScale: 0.3
+  odmBoostForce: 15
 --- !u!1 &780651002 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -6354894899732112715, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
@@ -2908,7 +2908,7 @@ MonoBehaviour:
   cameraController: {fileID: 1188352543}
   buildingGrabber: {fileID: 374962027}
   handPointer: {fileID: 374962028}
-  bearGrappleController: {fileID: 758009038}
+  bearGrappleController: {fileID: 0}
   braceletScale: {x: 0.6, y: 0.06, z: 0.7}
   braceletRotationOffset: {x: 0, y: 0, z: 90}
   braceletPositionOffset: {x: -0.15, y: 0, z: 0}
@@ -4923,7 +4923,7 @@ PrefabInstance:
     - target: {fileID: 2139517966342556168, guid: d342ee9e52cb97443acb540cfe3e6ba2, type: 3}
       propertyPath: grappleController
       value: 
-      objectReference: {fileID: 758009038}
+      objectReference: {fileID: 0}
     - target: {fileID: 2139517966342556168, guid: d342ee9e52cb97443acb540cfe3e6ba2, type: 3}
       propertyPath: traverseMoveSpeed
       value: 0.008
