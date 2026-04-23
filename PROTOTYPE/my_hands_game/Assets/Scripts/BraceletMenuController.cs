@@ -14,8 +14,8 @@ public class BraceletMenuController : MonoBehaviour
     public BuildingGrabber buildingGrabber;
     [Tooltip("Drag the GameObject holding the HandPointer here.")]
     public HandPointer handPointer;
-    [Tooltip("Drag the GameObject holding the BearGrappleController here.")]
-    public BearGrappleController bearGrappleController;
+    [Tooltip("Drag the GameObject holding the BearODMController here.")]
+    public BearODMController bearODMController;
 
     [Header("Bracelet Settings")]
     [Tooltip("Scale")]
@@ -270,9 +270,9 @@ public class BraceletMenuController : MonoBehaviour
             cameraController.isGrapplingMode = false;
             cameraController.isTraverseMode  = false;
         }
-        if (buildingGrabber != null) buildingGrabber.enabled = false;
-        if (handPointer     != null) handPointer.enabled     = false;
-        if (bearGrappleController != null) bearGrappleController.isGrapplingMode = false;
+        if (buildingGrabber   != null) buildingGrabber.enabled     = false;
+        if (handPointer       != null) handPointer.enabled         = false;
+        if (bearODMController != null) bearODMController.isODMMode = false;
 
         switch (currentActiveMode)
         {
@@ -291,9 +291,9 @@ public class BraceletMenuController : MonoBehaviour
                 break;
             
             case 2:
-                if (cameraController      != null) cameraController.isGrapplingMode      = true;
-                if (bearGrappleController != null) bearGrappleController.isGrapplingMode = true;
-                if (manoReceiver          != null) manoReceiver.isGrapplingMode          = true;
+                if (cameraController  != null) cameraController.isGrapplingMode = true;
+                if (bearODMController != null) bearODMController.isODMMode      = true;
+                if (manoReceiver      != null) manoReceiver.isGrapplingMode     = true;
                 break;
         }
     }

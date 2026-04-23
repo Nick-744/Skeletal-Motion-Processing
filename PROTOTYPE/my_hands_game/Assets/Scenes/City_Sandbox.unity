@@ -2320,7 +2320,7 @@ MonoBehaviour:
   detachDelay: 0.3
   isODMMode: 0
   winchingSpeed: 5
-  odmSteeringSensitivity: 2
+  odmSteeringSensitivity: 0.2
   odmSlowMotionScale: 0.3
   odmBoostForce: 15
 --- !u!1 &780651002 stripped
@@ -2908,7 +2908,7 @@ MonoBehaviour:
   cameraController: {fileID: 1188352543}
   buildingGrabber: {fileID: 374962027}
   handPointer: {fileID: 374962028}
-  bearGrappleController: {fileID: 0}
+  bearODMController: {fileID: 758009042}
   braceletScale: {x: 0.6, y: 0.06, z: 0.7}
   braceletRotationOffset: {x: 0, y: 0, z: 90}
   braceletPositionOffset: {x: -0.15, y: 0, z: 0}
@@ -4923,7 +4923,7 @@ PrefabInstance:
     - target: {fileID: 2139517966342556168, guid: d342ee9e52cb97443acb540cfe3e6ba2, type: 3}
       propertyPath: grappleController
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 758009042}
     - target: {fileID: 2139517966342556168, guid: d342ee9e52cb97443acb540cfe3e6ba2, type: 3}
       propertyPath: traverseMoveSpeed
       value: 0.008
