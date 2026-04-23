@@ -374,12 +374,18 @@ public class BearGrappleController : MonoBehaviour
             // Calculate the direction from bear's center to point of contact
             Vector3 hitDirection = (contact.point - root.position).normalized;
             
-            // Compare hit direction against bear's local forward and right axes
+            // Compare hit direction against bear's local forward, right, and up axes
             float dotForward = Vector3.Dot(root.forward, hitDirection);
             float dotRight   = Vector3.Dot(root.right, hitDirection);
+            float dotUp      = Vector3.Dot(root.up, hitDirection);
 
             string hitCategory = "";
-            if (Mathf.Abs(dotForward) > Mathf.Abs(dotRight))
+            if (Mathf.Abs(dotUp) > Mathf.Abs(dotForward) && Mathf.Abs(dotUp) > Mathf.Abs(dotRight))
+            {
+                if (dotUp > 0) hitCategory = "Top hit";
+                else           hitCategory = "Bottom hit";
+            }
+            else if (Mathf.Abs(dotForward) > Mathf.Abs(dotRight))
             {
                 if (dotForward > 0) hitCategory = "Front hit";
                 else                hitCategory = "Back hit";
@@ -391,7 +397,9 @@ public class BearGrappleController : MonoBehaviour
             }
 
             Debug.Log($"Detect Hit: {hitCategory} against {collision.gameObject.name}");
-            TriggerHapticFeedback(hitCategory);
+            
+            // Only trigger haptic feedback for side/front/back hits
+            if (hitCategory != "Top hit" && hitCategory != "Bottom hit") TriggerHapticFeedback(hitCategory);
         }
     }
 
