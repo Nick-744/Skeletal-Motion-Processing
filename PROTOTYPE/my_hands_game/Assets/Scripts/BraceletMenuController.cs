@@ -55,6 +55,8 @@ public class BraceletMenuController : MonoBehaviour
     public string rightActivationGesture = "Victory";
     [Tooltip("Gesture for left hand to select the active item")]
     public string leftSelectionGesture   = "Thumb_Up";
+    [Tooltip("Gesture for both hands to reset to default option")]
+    public string resetGesture           = "Thumb_Down";
 
     private float transitionSpeed = 5f;
 
@@ -147,6 +149,18 @@ public class BraceletMenuController : MonoBehaviour
     void Update()
     {
         if (manoReceiver == null) return;
+
+        // Reset to default
+        if (manoReceiver.currentLeftGesture == resetGesture && manoReceiver.currentRightGesture == resetGesture)
+        {
+            if (currentActiveMode != -1)
+            {
+                currentActiveMode = -1;
+                ApplyCurrentMode();
+                isMenuActive      = false;
+                braceletVisual.SetActive(isMenuActive);
+            }
+        }
 
         // Menu activation - Right hand
         if (manoReceiver.currentRightGesture == rightActivationGesture)
@@ -270,9 +284,22 @@ public class BraceletMenuController : MonoBehaviour
             cameraController.isGrapplingMode = false;
             cameraController.isTraverseMode  = false;
         }
-        if (buildingGrabber   != null) buildingGrabber.enabled     = false;
-        if (handPointer       != null) handPointer.enabled         = false;
-        if (bearODMController != null) bearODMController.isODMMode = false;
+
+        if (manoReceiver != null) manoReceiver.isGrapplingMode = false;
+
+        if (buildingGrabber != null) buildingGrabber.enabled = false;
+        if (handPointer     != null) handPointer.enabled     = false;
+
+        if (bearODMController != null)
+        {
+            bearODMController.isODMMode = false;
+            if (bearODMController.bearRoot != null)
+                bearODMController.bearRoot.gameObject.SetActive(false);
+        }
+
+        // Reset time...
+        Time.timeScale      = 1f;
+        Time.fixedDeltaTime = 0.02f;
 
         switch (currentActiveMode)
         {
@@ -291,9 +318,16 @@ public class BraceletMenuController : MonoBehaviour
                 break;
             
             case 2:
-                if (cameraController  != null) cameraController.isGrapplingMode = true;
-                if (bearODMController != null) bearODMController.isODMMode      = true;
-                if (manoReceiver      != null) manoReceiver.isGrapplingMode     = true;
+                if (cameraController != null) cameraController.isGrapplingMode = true;
+                if (manoReceiver     != null) manoReceiver.isGrapplingMode     = true;
+
+                if (bearODMController != null)
+                {
+                    bearODMController.isODMMode = true;
+                    if (bearODMController.bearRoot != null)
+                        bearODMController.bearRoot.gameObject.SetActive(true);
+                }
+
                 break;
         }
     }
