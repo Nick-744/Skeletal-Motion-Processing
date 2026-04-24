@@ -282,6 +282,7 @@ public class BraceletMenuController : MonoBehaviour
         {
             cameraController.isRingMode      = false;
             cameraController.isGrapplingMode = false;
+            cameraController.isODMMode       = false;
             cameraController.isTraverseMode  = false;
         }
 
@@ -293,6 +294,8 @@ public class BraceletMenuController : MonoBehaviour
         if (bearODMController != null)
         {
             bearODMController.isODMMode = false;
+            bearODMController.ForceCleanUp();
+            
             if (bearODMController.bearRoot != null)
                 bearODMController.bearRoot.gameObject.SetActive(false);
         }
@@ -318,8 +321,8 @@ public class BraceletMenuController : MonoBehaviour
                 break;
             
             case 2:
-                if (cameraController != null) cameraController.isGrapplingMode = true;
-                if (manoReceiver     != null) manoReceiver.isGrapplingMode     = true;
+                if (cameraController != null) cameraController.isODMMode   = true;
+                if (manoReceiver     != null) manoReceiver.isGrapplingMode = true;
 
                 if (bearODMController != null)
                 {

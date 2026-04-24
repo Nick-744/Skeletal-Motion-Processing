@@ -20,6 +20,7 @@ public class CameraRingController : MonoBehaviour
 
     [Header("Grapple Camera Settings")]
     public bool isGrapplingMode = false;
+    public bool isODMMode       = false;
     public Transform bearTransform;
     public Vector3 thirdPersonOffset = new Vector3(0, 0.3f, -1.0f);
     
@@ -113,7 +114,14 @@ public class CameraRingController : MonoBehaviour
         // Logic for 3rd person camera (GRAPPLING MODE)
         if (isGrapplingMode && bearTransform != null && grappleController != null)
         {
-            HandleGrapplingMode();
+            HandleThirdPersonCamera(false);
+            return; // Skip the ring logic
+        }
+
+        // Logic for 3rd person camera (ODM MODE)
+        if (isODMMode && bearTransform != null && grappleController != null)
+        {
+            HandleThirdPersonCamera(true);
             return; // Skip the ring logic
         }
 
@@ -128,7 +136,7 @@ public class CameraRingController : MonoBehaviour
         if (isRingMode) HandleRingMode();
     }
 
-    private void HandleGrapplingMode()
+    private void HandleThirdPersonCamera(bool isODM)
     {
         wasInSpecialMode = true;
 
@@ -155,7 +163,7 @@ public class CameraRingController : MonoBehaviour
             targetLaserEnd = grappleController.leftLaserEnd; // Right is grabbing, left is free
         }
 
-        if (steeringHand == null)
+        if (steeringHand == null || isODM)
         {
             // BEHAVIOR standing
             transform.position = bearTransform.position + bearTransform.TransformDirection(thirdPersonOffset); // No smooth transition...

@@ -300,6 +300,14 @@ public class BearGrappleBase : MonoBehaviour
         }
     }
 
+    public void ForceCleanUp()
+    {
+        leftArmState?.CleanUp();
+        rightArmState?.CleanUp();
+    }
+
+    protected virtual void OnDisable() { ForceCleanUp(); }
+
     protected virtual void OnCollisionEnter(Collision collision)
     {
         if (collision.contactCount > 0)
