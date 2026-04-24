@@ -1,5 +1,4 @@
 using UnityEngine;
-using Bhaptics.SDK2;
 
 public class BearODMController : BearGrappleBase
 {
@@ -7,15 +6,18 @@ public class BearODMController : BearGrappleBase
     public bool isODMMode = false;
 
     [Header("ODM Mechanics")]
-    public float winchingSpeed          = 5f;
-    public float odmSteeringSensitivity = 2f;
-    public float odmSlowMotionScale     = 0.3f;
+    public float winchingSpeed          = 10f;
     public float odmBoostForce          = 15f;
+    public float odmSteeringSensitivity = 1.5f;
+    public float odmSlowMotionScale     = 0.01f;
+    public float hookReleaseDelay       = 0.25f;
     
-    private bool wasODMRotating = false;
     private bool wasODMHooked   = false;
-    private Vector3 initialODMHandVector;
-    private Quaternion initialBearRot;
+    private bool isSlowMoActive = false;
+    private bool canShootHooks  = true;
+    private Vector3 hookWallPoint;
+    private Vector3 hookWallNormal;
+    private float hookReleaseTimer = 0f;
 
     void Update()
     {
@@ -45,20 +47,8 @@ public class BearODMController : BearGrappleBase
         if (bearRb != null)
         {
             if (leftArmState.joint != null || rightArmState.joint != null)
-            {
                 // Grappling...
                 bearRb.linearDamping = grappleAirDrag;
-
-                // Figure out which arm is currently pulling the bear
-                GrappleState activeState = leftArmState.joint != null ? leftArmState : rightArmState;
-
-                // Force the bear to face the locked direction
-                if (activeState.lockedForward != Vector3.zero)
-                {
-                    Quaternion targetRot = Quaternion.LookRotation(activeState.lockedForward);
-                    bearRoot.rotation    = Quaternion.Slerp(bearRoot.rotation, targetRot, Time.deltaTime * 10f);
-                }
-            }
             else
                 // NOT grappling...
                 bearRb.linearDamping = originalDrag;
@@ -67,80 +57,94 @@ public class BearODMController : BearGrappleBase
 
     private void HandleODMGrapple(string leftGesture, string rightGesture)
     {
-        bool bothFists = (leftGesture == "Closed_Fist" && rightGesture == "Closed_Fist");
-        bool bothOpen  = (leftGesture == "Open_Palm"   && rightGesture == "Open_Palm");
+        if (leftGesture == "Pointing_Up" || rightGesture == "Pointing_Up") canShootHooks = true;
+
+        bool isDetectedBothFists = (leftGesture == "Closed_Fist" && rightGesture == "Closed_Fist");
+        
+        // ---< Lost Grab Problem Solution >--- //
+        if (isDetectedBothFists) hookReleaseTimer = 0f;
+        bool bothFists = isDetectedBothFists;
+        if (wasODMHooked && !isDetectedBothFists)
+        {
+            hookReleaseTimer += Time.deltaTime;
+            if (hookReleaseTimer < hookReleaseDelay) bothFists = true;
+        }
 
         UpdateODMAimPhase(leftArmState);
         UpdateODMAimPhase(rightArmState);
         Vector3 leftAnchorWorld  = leftArmState.arm != null ? leftArmState.arm.position + (leftArmState.arm.up * 0.15f) : bearRoot.position;
         Vector3 rightAnchorWorld = rightArmState.arm != null ? rightArmState.arm.position + (rightArmState.arm.up * 0.15f) : bearRoot.position;
 
-        if (bothFists)
+        bool passedWall = false;
+        if (wasODMHooked && leftArmState.joint != null && rightArmState.joint != null)
         {
-            wasODMRotating = false;
+            Vector3 toBear = bearRoot.position - hookWallPoint;
+            toBear.y       = 0;
+
+            // Check if the bear has swung past the wall enough to warrant unhooking...
+            if (Vector3.Dot(toBear, hookWallNormal) > 0.4f) passedWall = true;
+        }
+
+        bool unhookTrigger = passedWall || (!bothFists && wasODMHooked);
+
+        if (bothFists && canShootHooks && !passedWall)
+        {
+            isSlowMoActive = false;
 
             Time.timeScale      = Mathf.Lerp(Time.timeScale, 1f, Time.unscaledDeltaTime * 8f);
             Time.fixedDeltaTime = 0.02f * Time.timeScale;
 
-            if (leftArmState.joint  == null)  TryAttachGrapple(grabGesture, leftArmState, leftArmState.targetMarker.activeSelf, leftArmState.laserEnd, leftAnchorWorld);
+            bool newlyAttached = (leftArmState.joint == null || rightArmState.joint == null);
+
+            if (leftArmState.joint  == null) TryAttachGrapple(grabGesture, leftArmState, leftArmState.targetMarker.activeSelf, leftArmState.laserEnd, leftAnchorWorld);
             if (rightArmState.joint == null) TryAttachGrapple(grabGesture, rightArmState, rightArmState.targetMarker.activeSelf, rightArmState.laserEnd, rightAnchorWorld);
 
-            if (leftArmState.joint  != null)  leftArmState.joint.maxDistance  = Mathf.Max(0.1f, leftArmState.joint.maxDistance - winchingSpeed * Time.deltaTime);
+            if (leftArmState.joint  != null) leftArmState.joint.maxDistance  = Mathf.Max(0.1f, leftArmState.joint.maxDistance - winchingSpeed * Time.deltaTime);
             if (rightArmState.joint != null) rightArmState.joint.maxDistance = Mathf.Max(0.1f, rightArmState.joint.maxDistance - winchingSpeed * Time.deltaTime);
 
-            if (leftArmState.joint != null || rightArmState.joint != null)
-                wasODMHooked = true;
+            if (!wasODMHooked && (leftArmState.joint != null || rightArmState.joint != null)) wasODMHooked = true;
+
+            if (newlyAttached && leftArmState.joint != null && rightArmState.joint != null)
+            {
+                Vector3 center   = (leftArmState.joint.connectedAnchor + rightArmState.joint.connectedAnchor) / 2f;
+                hookWallPoint    = center;
+                hookWallNormal   = (center - bearRoot.position);
+                hookWallNormal.y = 0;
+                hookWallNormal.Normalize();
+            }
         }
-        else
+        else if (unhookTrigger)
         {
-            if (leftArmState.joint  != null)  TryDetachGrapple("Drop", null, leftArmState);
+            if (leftArmState.joint  != null) TryDetachGrapple("Drop", null, leftArmState);
             if (rightArmState.joint != null) TryDetachGrapple("Drop", null, rightArmState);
 
-            if (bothOpen)
+            if (wasODMHooked && bearRb != null)
             {
-                if (wasODMHooked && bearRb != null)
-                {
-                    Vector3 boostDir = bearRoot.forward + Vector3.up * 0.4f;
-                    bearRb.AddForce(boostDir.normalized * odmBoostForce, ForceMode.Impulse);
-                    wasODMHooked = false;
-                }
-
-                Time.timeScale      = Mathf.Lerp(Time.timeScale, odmSlowMotionScale, Time.unscaledDeltaTime * 8f);
-                Time.fixedDeltaTime = 0.02f * Time.timeScale;
-
-                Vector3 leftPos    = manoReceiver.leftHandRoot.position;
-                Vector3 rightPos   = manoReceiver.rightHandRoot.position;
-                Vector3 handVector = bearRoot.InverseTransformDirection(rightPos - leftPos);
-
-                if (!wasODMRotating)
-                {
-                    wasODMRotating       = true;
-                    initialBearRot       = bearRoot.rotation;
-                    initialODMHandVector = handVector;
-                }
-                else
-                {
-                    float initialYaw = Mathf.Atan2(initialODMHandVector.z, initialODMHandVector.x) * Mathf.Rad2Deg;
-                    float currentYaw = Mathf.Atan2(handVector.z, handVector.x) * Mathf.Rad2Deg;
-                    float deltaYaw   = Mathf.DeltaAngle(initialYaw, currentYaw);
-
-                    bearRoot.rotation = initialBearRot * Quaternion.Euler(0, -deltaYaw * odmSteeringSensitivity, 0);
-                }
-            }
-            else
-            {
-                wasODMRotating = false;
+                Vector3 boostDir = bearRoot.forward + Vector3.up * 0.4f;
+                bearRb.AddForce(boostDir.normalized * odmBoostForce, ForceMode.Impulse);
                 wasODMHooked   = false;
-
-                Time.timeScale      = Mathf.Lerp(Time.timeScale, 1f, Time.unscaledDeltaTime * 8f);
-                Time.fixedDeltaTime = 0.02f * Time.timeScale;
+                isSlowMoActive = true;
+                canShootHooks  = false;
             }
         }
 
-        if (leftArmState.joint  != null)  UpdateRopeVisuals(leftArmState, leftAnchorWorld, Vector3.zero);
+        if (isSlowMoActive)
+        {
+            Time.timeScale      = Mathf.Lerp(Time.timeScale, odmSlowMotionScale, Time.unscaledDeltaTime * 8f);
+            Time.fixedDeltaTime = 0.02f * Time.timeScale;
+
+            float rotationSpeed = 50f * odmSteeringSensitivity;
+
+            if (leftGesture == "Pointing_Up")
+                bearRoot.Rotate(0, -rotationSpeed * Time.unscaledDeltaTime, 0, Space.Self);
+            else if (rightGesture == "Pointing_Up")
+                bearRoot.Rotate(0, rotationSpeed * Time.unscaledDeltaTime, 0, Space.Self);
+        }
+
+        if (leftArmState.joint  != null) UpdateRopeVisuals(leftArmState, leftAnchorWorld, Vector3.zero);
         if (rightArmState.joint != null) UpdateRopeVisuals(rightArmState, rightAnchorWorld, Vector3.zero);
 
-        if (!bothOpen)
+        if (!unhookTrigger)
         {
             leftArmState.detachTimer  = 0f;
             rightArmState.detachTimer = 0f;

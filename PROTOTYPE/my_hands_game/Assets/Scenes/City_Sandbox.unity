@@ -2319,10 +2319,10 @@ MonoBehaviour:
   grabGesture: Closed_Fist
   detachDelay: 0.3
   isODMMode: 0
-  winchingSpeed: 5
-  odmSteeringSensitivity: 0.2
-  odmSlowMotionScale: 0.3
+  winchingSpeed: 10
   odmBoostForce: 15
+  odmSteeringSensitivity: 1.5
+  odmSlowMotionScale: 0.01
 --- !u!1 &780651002 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -6354894899732112715, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
