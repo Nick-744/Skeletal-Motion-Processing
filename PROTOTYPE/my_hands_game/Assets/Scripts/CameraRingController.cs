@@ -17,6 +17,8 @@ public class CameraRingController : MonoBehaviour
     public Vector3 centerPoint = new Vector3(1.0f, 0.0f, -1.0f);
     // How fast the camera moves around the ring
     public float moveSpeed = 45.0f;
+    [Tooltip("The gesture name used to rotate the ring")]
+    public string pointingUpGesture = "Pointing_Up";
 
     [Header("Grapple Camera Settings")]
     public bool isGrapplingMode = false;
@@ -342,12 +344,12 @@ public class CameraRingController : MonoBehaviour
         string right = manoReceiver.currentRightGesture;
 
         // Determine movement based on gesture combinations
-        if (left == "Pointing_Up" && right == "Closed_Fist")
+        if (left == pointingUpGesture && right == "Closed_Fist")
         {
             currentAngle          -= moveSpeed * Time.deltaTime;
             IsActivelyRotatingRing = true;
         }
-        else if (left == "Closed_Fist" && right == "Pointing_Up")
+        else if (left == "Closed_Fist" && right == pointingUpGesture)
         {
             currentAngle          += moveSpeed * Time.deltaTime;
             IsActivelyRotatingRing = true;
