@@ -35,6 +35,65 @@ VisionRunningMode        = mp.tasks.vision.RunningMode
 
 
 
+class HandednessSmoother:
+    def __init__(self, patience: int = 10):
+        self.patience = patience
+        self.history  = {}
+        self.current  = {}
+        self.duration = {}
+
+        return;
+
+    def update_all(self, raw_handednesses: list[str]) -> list[str]:
+        smoothed_proposals = []
+
+        for (hand_index, new_val) in enumerate(raw_handednesses):
+            if hand_index not in self.history:
+                self.history[hand_index]  = deque([new_val] * self.patience, maxlen = self.patience)
+                self.current[hand_index]  = new_val
+                self.duration[hand_index] = 1
+            else:
+                self.history[hand_index].append(new_val)
+
+            # Only change the current state if the new state has been consistent!
+            if self.history[hand_index].count(new_val) == self.patience and self.current[hand_index] != new_val:
+                self.current[hand_index]  = new_val
+                self.duration[hand_index] = 1
+            else:
+                self.duration[hand_index] += 1
+
+            smoothed_proposals.append(self.current[hand_index])
+
+        # Conflict resolution: Ensure only one LEFT and one RIGHT
+        grouped = {'Left': [], 'Right': []}
+        for (i, val) in enumerate(smoothed_proposals):
+            if val in grouped:
+                grouped[val].append(i)
+
+        for (val, indices) in grouped.items():
+            if len(indices) > 1:
+                # Sort indices by how long they have held this state (longest first)
+                indices.sort(key = lambda idx: self.duration.get(idx, 0), reverse = True)
+                
+                # The one that has held it the longest keeps it
+                flip_to = 'Left' if val == 'Right' else 'Right'
+                for idx in indices[1:]:
+                    smoothed_proposals[idx] = flip_to
+
+        return smoothed_proposals;
+
+    def reset_missing(self, num_hands: int):
+        keys_to_remove = [k for k in self.history.keys() if k >= num_hands]
+        for k in keys_to_remove:
+            del self.history[k]
+            del self.current[k]
+            if k in self.duration:
+                del self.duration[k]
+        
+        return;
+
+
+
 class HandTracker:
     def __init__(self, model_path: str, num_hands: int = 2):
         self._latest_result = None # GestureRecognizerResult | None
@@ -126,12 +185,18 @@ def reverse_handedness(handedness: str) -> str:
 
     return '?';
 
-def render_gesture_result(frame: 'cv2.Mat', gesture_result: GestureRecognizerResult) -> None:
+def render_gesture_result(frame: 'cv2.Mat', gesture_result: GestureRecognizerResult, smoother: HandednessSmoother) -> None:
     ''' Render gesture recognition results on frame in-place. '''
+    
+    smoother.reset_missing(len(gesture_result.gestures))
+
+    raw_handednesses      = [gesture_result.handedness[i][0].category_name for i in range(len(gesture_result.gestures))]
+    smoothed_handednesses = smoother.update_all(raw_handednesses)
 
     for (i, _) in enumerate(gesture_result.gestures):
         gesture_name = gesture_result.gestures[i][0].category_name
-        handedness   = gesture_result.handedness[i][0].category_name
+        handedness   = smoothed_handednesses[i]
+        
         cv2.putText(
             frame, f'{reverse_handedness(handedness)}: {gesture_name}',
             (15, 80 + i * 40),
@@ -151,6 +216,8 @@ def run(window_title: str = 'Testing...') -> None:
     # Moving average FPS calculation
     frame_times = deque(maxlen = 30)
     prev_time   = time() # Initialize time for FPS calculation
+    
+    smoother = HandednessSmoother()
 
     with HandTracker(model_path) as tracker:
         while True:
@@ -178,7 +245,7 @@ def run(window_title: str = 'Testing...') -> None:
 
             # Render gesture recognition results on frame
             if tracker.latest_result is not None:
-                render_gesture_result(frame, tracker.latest_result)
+                render_gesture_result(frame, tracker.latest_result, smoother)
 
             cv2.imshow(window_title, frame)
     
