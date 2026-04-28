@@ -84,25 +84,36 @@ public class Painter3D : MonoBehaviour
         ParticleSystem.Particle[] particles = new ParticleSystem.Particle[particleCount];
         pointCloudParticles.GetParticles(particles);
 
+        // Determine if the particle system simulates in local space
+        bool isLocalSpace     = pointCloudParticles.main.simulationSpace == ParticleSystemSimulationSpace.Local;
+        Transform psTransform = pointCloudParticles.transform;
+
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("# Point Cloud generated from Unity");
         sb.AppendLine($"# Total Points: {particleCount}");
+        sb.AppendLine("o PointCloud");
 
-        // Format points to OBJ vertices
+        // Format points as OBJ vertices
         for (int i = 0; i < particleCount; i++)
         {
-            Vector3 pos = particles[i].position;
+            // Convert to world space...
+            Vector3 pos = isLocalSpace
+                ? psTransform.TransformPoint(particles[i].position)
+                : particles[i].position;
 
-            // Force '.' instead of ','
+            // Force '.' as decimal separator
             string x = pos.x.ToString(CultureInfo.InvariantCulture);
             string y = pos.y.ToString(CultureInfo.InvariantCulture);
             // Invert the Z-axis: left handed system -> right handed system
-            string z = (-pos.z).ToString(CultureInfo.InvariantCulture); 
-            
+            string z = (-pos.z).ToString(CultureInfo.InvariantCulture);
+
             sb.AppendLine($"v {x} {y} {z}");
         }
 
-        for (int i = 1; i <= particleCount; i++) sb.AppendLine($"p {i}"); // Add point elements
+        // Single point element listing all vertices
+        sb.Append("p");
+        for (int i = 1; i <= particleCount; i++) sb.Append($" {i}"); // Add point elements
+        sb.AppendLine();
 
         // Set up the Desktop file path with a timestamp
         string timestamp   = DateTime.Now.ToString("yyyyMMdd_HHmmss");
