@@ -150,7 +150,7 @@ def adaptive_IK(T_: np.ndarray, P_: np.ndarray) -> np.ndarray:
         # Convert the "swing" axis and angle into a 3x3 rotation matrix
         D_sw  = transforms3d.axangles.axangle2mat(axis = axis,  angle = alpha,         is_normalized = False)
         # Convert the "twist" axis and angle into a 3x3 rotation matrix
-        D_tw  = transforms3d.axangles.axangle2mat(axis = twist, angle = angles0[:, k], is_normalized = False)
+        D_tw  = transforms3d.axangles.axangle2mat(axis = twist, angle = angles0[0, k], is_normalized = False)
 
         # Combine swing and twist to get the final
         # relative rotation of joint k from its parent.

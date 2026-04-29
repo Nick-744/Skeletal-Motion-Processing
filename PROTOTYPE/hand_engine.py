@@ -36,7 +36,7 @@ VisionRunningMode        = mp.tasks.vision.RunningMode
 
 
 class HandTracker:
-    def __init__(self, model_path: str, num_hands: int = 2):
+    def __init__(self, model_path: str, num_hands: int = 2, min_confidence: float = 0.8):
         self._latest_result = None # GestureRecognizerResult | None
         self._lock          = threading.Lock()
 
@@ -45,7 +45,11 @@ class HandTracker:
             base_options    = BaseOptions(model_asset_path = model_path),
             num_hands       = num_hands,
             running_mode    = VisionRunningMode.LIVE_STREAM,
-            result_callback = self._on_result
+            result_callback = self._on_result,
+
+            min_hand_detection_confidence = min_confidence,
+            min_hand_presence_confidence  = min_confidence,
+            min_tracking_confidence       = min_confidence
         )
 
         # The gesture recognizer (+ integrated hand landmarker) is initialized...
