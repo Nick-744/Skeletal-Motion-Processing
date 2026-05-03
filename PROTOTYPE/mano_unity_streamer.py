@@ -88,15 +88,15 @@ def main(window_title: str = 'MANO to Unity Streamer') -> None:
                 message = json.dumps(frame_payload).encode('utf-8')
                 sock.sendto(message, (UDP_IP, UDP_PORT))
 
-            cv2.imshow(window_title, frame)
+            # cv2.imshow(window_title, frame)
             
-            if (cv2.waitKey(1) & 0xFF == 27) or \
-                cv2.getWindowProperty(window_title, cv2.WND_PROP_VISIBLE) < 1:
-                break;
+            # if (cv2.waitKey(1) & 0xFF == 27) or \
+            #     cv2.getWindowProperty(window_title, cv2.WND_PROP_VISIBLE) < 1:
+            #     break;
 
     # Cleanup
     cap.release()
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
 
     return;
 

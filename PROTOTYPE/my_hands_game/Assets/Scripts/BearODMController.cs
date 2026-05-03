@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BearODMController : BearGrappleBase
+public class BearODMController : BearGrappleCore
 {
     [Header("Controller Settings")]
     public bool isODMMode = false;

@@ -1,7 +1,7 @@
 using UnityEngine;
 using Bhaptics.SDK2;
 
-public class BearGrappleBase : MonoBehaviour
+public class BearGrappleCore : MonoBehaviour
 {
     [Header("Dependencies")]
     [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]

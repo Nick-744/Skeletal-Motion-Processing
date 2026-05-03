@@ -3,11 +3,11 @@ using UnityEngine;
 public class CameraRingController : MonoBehaviour
 {
     [Header("Dependencies")]
-    [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
+    [Tooltip("GameObject holding the ManoLiveReceiver script.")]
     public ManoLiveReceiver manoReceiver;
     
-    [Tooltip("Drag the Bear holding the BearGrappleController script here.")]
-    public BearGrappleBase grappleController;
+    [Tooltip("Bear holding the BearGrappleCore script.")]
+    public BearGrappleCore grappleController;
 
     [Header("Ring Settings")]
     public bool isRingMode = true;
@@ -37,7 +37,7 @@ public class CameraRingController : MonoBehaviour
     public float traverseMoveSpeed = 0.008f;
     [Tooltip("Deadzone threshold.")]
     public Vector3 traverseDeadzone = new Vector3(5.0f, 5.0f, 5.0f);
-    [Tooltip("Drag the parent object containing both the Camera and Hands here.")]
+    [Tooltip("Parent object containing both the Camera and Hands.")]
     public Transform playerRig;
 
     public bool IsActivelyRotatingRing { get; private set; } // State Tracking for external scripts

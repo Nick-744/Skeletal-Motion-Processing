@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BearGrappleController : BearGrappleBase
+public class BearGrappleController : BearGrappleCore
 {
     [Header("Controller Settings")]
     public bool isGrapplingMode = false;

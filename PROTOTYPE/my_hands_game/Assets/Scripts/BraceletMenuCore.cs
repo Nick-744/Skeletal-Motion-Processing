@@ -1,21 +1,11 @@
 using UnityEngine;
 using TMPro;
 
-public class BraceletMenuController : MonoBehaviour
+public class BraceletMenuCore : MonoBehaviour
 {
     [Header("Dependencies")]
     [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
     public ManoLiveReceiver manoReceiver;
-
-    [Header("Mode Controllers")]
-    [Tooltip("Drag the GameObject holding the CameraRingController here.")]
-    public CameraRingController cameraController;
-    [Tooltip("Drag the GameObject holding the BuildingGrabber here.")]
-    public BuildingGrabber buildingGrabber;
-    [Tooltip("Drag the GameObject holding the HandPointer here.")]
-    public HandPointer handPointer;
-    [Tooltip("Drag the GameObject holding the BearODMController here.")]
-    public BearODMController bearODMController;
 
     [Header("Bracelet Settings")]
     [Tooltip("Scale")]
@@ -76,9 +66,9 @@ public class BraceletMenuController : MonoBehaviour
     private bool hasReleasedLeftGesture  = true;
 
     // Tracker for currently selected mode (-1: Default)
-    private int currentActiveMode = -1; 
+    protected int currentActiveMode = -1; 
 
-    void Start() 
+    protected virtual void Start() 
     { 
         CreateYellowBracelet();
         CreateMenuText();
@@ -275,63 +265,8 @@ public class BraceletMenuController : MonoBehaviour
         ApplyCurrentMode();
     }
 
-    private void ApplyCurrentMode()
+    protected virtual void ApplyCurrentMode()
     {
-        // Reset everything
-        if (cameraController != null)
-        {
-            cameraController.isRingMode      = false;
-            cameraController.isGrapplingMode = false;
-            cameraController.isODMMode       = false;
-            cameraController.isTraverseMode  = false;
-        }
-
-        if (manoReceiver != null) manoReceiver.isGrapplingMode = false;
-
-        if (buildingGrabber != null) buildingGrabber.enabled = false;
-        if (handPointer     != null) handPointer.enabled     = false;
-
-        if (bearODMController != null)
-        {
-            bearODMController.isODMMode = false;
-            bearODMController.ForceCleanUp();
-            
-            if (bearODMController.bearRoot != null)
-                bearODMController.bearRoot.gameObject.SetActive(false);
-        }
-
-        // Reset time...
-        Time.timeScale      = 1f;
-        Time.fixedDeltaTime = 0.02f;
-
-        switch (currentActiveMode)
-        {
-            case -1:
-                // Default Mode: Basic ring camera only...
-                if (cameraController != null) cameraController.isRingMode = true;
-                break;
-            
-            case 0:
-                if (cameraController != null) cameraController.isTraverseMode = true;
-                break;
-            
-            case 1:
-                if (buildingGrabber != null) buildingGrabber.enabled = true;
-                if (handPointer     != null) handPointer.enabled     = true;
-                break;
-            
-            case 2:
-                if (cameraController != null) cameraController.isODMMode   = true;
-                if (manoReceiver     != null) manoReceiver.isGrapplingMode = true;
-
-                if (bearODMController != null)
-                {
-                    bearODMController.isODMMode = true;
-                    if (bearODMController.bearRoot != null)
-                        bearODMController.bearRoot.gameObject.SetActive(true);
-                }
-
-                break;
-        }
+        // This method must be overridden in child classes...
     }
 }

@@ -2323,6 +2323,7 @@ MonoBehaviour:
   odmBoostForce: 15
   odmSteeringSensitivity: 1.5
   odmSlowMotionScale: 0.01
+  hookReleaseDelay: 0.25
 --- !u!1 &780651002 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -6354894899732112715, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
@@ -2901,14 +2902,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 973421119}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 607b1690a9b38fc46a6719f0ec17ff6f, type: 3}
+  m_Script: {fileID: 11500000, guid: c16f7d3a9f431c9488f91b6cca2c6eb3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BraceletMenuController
+  m_EditorClassIdentifier: Assembly-CSharp::BraceletMenuCity
   manoReceiver: {fileID: 2123913870}
-  cameraController: {fileID: 1188352543}
-  buildingGrabber: {fileID: 374962027}
-  handPointer: {fileID: 374962028}
-  bearODMController: {fileID: 758009042}
   braceletScale: {x: 0.6, y: 0.06, z: 0.7}
   braceletRotationOffset: {x: 0, y: 0, z: 90}
   braceletPositionOffset: {x: -0.15, y: 0, z: 0}
@@ -2927,6 +2924,11 @@ MonoBehaviour:
   fontSize: 3
   rightActivationGesture: Victory
   leftSelectionGesture: Thumb_Up
+  resetGesture: Thumb_Down
+  cameraController: {fileID: 1188352543}
+  buildingGrabber: {fileID: 374962027}
+  handPointer: {fileID: 374962028}
+  bearODMController: {fileID: 758009042}
 --- !u!1 &981343530 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -678909663146211545, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
