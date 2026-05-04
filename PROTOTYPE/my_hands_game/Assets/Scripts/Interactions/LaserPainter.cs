@@ -1,7 +1,11 @@
 using UnityEngine;
+using System.Collections.Generic;
+using TMPro;
 
 public class LaserPainter : MonoBehaviour
 {
+    public enum PaintMode { Paint, Erase }
+
     [Header("Dependencies")]
     public ManoLiveReceiver manoReceiver;
     [Tooltip("The Transform of the 'Paper' in scene.")]
@@ -14,14 +18,38 @@ public class LaserPainter : MonoBehaviour
     public float smoothTime       = 0.1f;
     [Tooltip("Minimum distance between points to optimize the line.")]
     public float minPointDistance = 0.01f;
+    [Tooltip("How close the laser needs to be to a line to erase it.")]
+    public float eraseRadius      = 0.03f;
+
+    [Header("Current State")]
+    public PaintMode currentMode = PaintMode.Paint;
 
     // Internal tracking
     private LineRenderer laserBeam; 
     private LineRenderer currentLine;
+    private GameObject currentLineObj;
     private Collider paperCollider; 
     private Vector3 smoothedPosition;
     private Vector3 velocity         = Vector3.zero;
     private bool isCurrentlyPainting = false;
+
+    // Undo/Redo - Erasing System
+    private class PaintAction
+    {
+        public enum ActionType { Draw, Erase }
+        public ActionType type;
+        public GameObject lineObj;
+    }
+    
+    private List<GameObject> activeLines = new List<GameObject>();
+    private Stack<PaintAction> undoStack = new Stack<PaintAction>();
+    private Stack<PaintAction> redoStack = new Stack<PaintAction>();
+    private bool hasReleasedUndoRedo     = true;
+
+    // Feedback Text
+    private GameObject feedbackTextObject;
+    private TextMeshPro feedbackText;
+    private float feedbackTimer = 0f;
 
     void Start()
     {
@@ -38,11 +66,26 @@ public class LaserPainter : MonoBehaviour
         laserBeam.startColor    = Color.red;
         laserBeam.endColor      = Color.red;
         laserBeam.enabled       = false;
+
+        CreateFeedbackText();
+    }
+
+    private void CreateFeedbackText()
+    {
+        feedbackTextObject     = new GameObject("UndoRedo_FeedbackText");
+        feedbackText = feedbackTextObject.AddComponent<TextMeshPro>();
+        feedbackText.alignment = TextAlignmentOptions.Center;
+        feedbackText.fontSize  = 4f;
+        feedbackText.color     = Color.black;
+        feedbackTextObject.SetActive(false);
     }
 
     void Update()
     {
         if (manoReceiver == null || paperCollider == null || linePrefab == null) return;
+
+        HandleUndoRedoGestures();
+        HandleFeedbackText();
 
         Transform indexTip = manoReceiver.rightBones[3];
 
@@ -67,7 +110,7 @@ public class LaserPainter : MonoBehaviour
             // Lift the ink so it rests ON TOP of the paper mesh...
             Vector3 targetInkPos = nearestPointOnPaper + (paperTransform.up * 0.002f);
 
-            // Draw ONLY when pointing up
+            // Action ONLY when pointing up
             if (manoReceiver.currentRightGesture == "Pointing_Up" && isAimingAtPaper)
             {
                 // Smooth the hit point to prevent hand jitter
@@ -75,15 +118,23 @@ public class LaserPainter : MonoBehaviour
                 smoothedPosition  = paperCollider.ClosestPoint(smoothedPosition);
                 smoothedPosition += (paperTransform.up * 0.002f); // Clamp...
 
-                if (!isCurrentlyPainting) StartNewLine(smoothedPosition);
-                else                      UpdateCurrentLine(smoothedPosition);
+                if (currentMode == PaintMode.Paint)
+                {
+                    if (!isCurrentlyPainting) StartNewLine(smoothedPosition);
+                    else                      UpdateCurrentLine(smoothedPosition);
+                }
+                else if (currentMode == PaintMode.Erase) TryEraseLine(smoothedPosition);
             }
             else
             {
-                // Lift the brush
-                isCurrentlyPainting = false;
+                // Lift the brush / Stop erasing
+                if (isCurrentlyPainting)
+                {
+                    isCurrentlyPainting = false;
+                    FinalizeCurrentLine();
+                }
                 
-                // Snap the smoothed position to the laser dot when NOT drawing
+                // Snap the smoothed position to the laser dot when NOT active
                 smoothedPosition = targetInkPos;
                 velocity         = Vector3.zero;
             }
@@ -91,6 +142,7 @@ public class LaserPainter : MonoBehaviour
         else
         {
             // Hand is totally lost
+            if (isCurrentlyPainting) FinalizeCurrentLine();
             isCurrentlyPainting = false;
             if (laserBeam != null) laserBeam.enabled = false;
         }
@@ -98,8 +150,8 @@ public class LaserPainter : MonoBehaviour
 
     private void StartNewLine(Vector3 startPos)
     {
-        GameObject newLineObj = Instantiate(linePrefab, Vector3.zero, Quaternion.identity);
-        currentLine           = newLineObj.GetComponent<LineRenderer>();
+        currentLineObj = Instantiate(linePrefab, Vector3.zero, Quaternion.identity);
+        currentLine    = currentLineObj.GetComponent<LineRenderer>();
         
         currentLine.positionCount = 1;
         currentLine.SetPosition(0, startPos);
@@ -117,10 +169,145 @@ public class LaserPainter : MonoBehaviour
             currentLine.SetPosition(currentLine.positionCount - 1, newPos);
         }
     }
+
+    // ---< UNDO/REDO - ERASING SYSTEM FUNCTIONS >--- //
+
+    private void FinalizeCurrentLine()
+    {
+        if (currentLineObj != null)
+        {
+            activeLines.Add(currentLineObj);
+            undoStack.Push(new PaintAction { type = PaintAction.ActionType.Draw, lineObj = currentLineObj });
+            redoStack.Clear(); // Clear redo history when a new action is made
+            currentLineObj = null;
+            currentLine    = null;
+        }
+    }
+
+    private void TryEraseLine(Vector3 erasePos)
+    {
+        // Iterate backwards - safely remove from the list
+        for (int i = activeLines.Count - 1; i >= 0; i--)
+        {
+            GameObject lineObj = activeLines[i];
+            LineRenderer lr    = lineObj.GetComponent<LineRenderer>();
+            
+            Vector3[] positions = new Vector3[lr.positionCount];
+            lr.GetPositions(positions);
+
+            foreach (Vector3 point in positions)
+            {
+                if (Vector3.Distance(point, erasePos) <= eraseRadius)
+                {
+                    // Erase it!
+                    lineObj.SetActive(false);
+                    activeLines.RemoveAt(i);
+                    
+                    undoStack.Push(new PaintAction { type = PaintAction.ActionType.Erase, lineObj = lineObj });
+                    redoStack.Clear();
+                    break; 
+                }
+            }
+        }
+    }
+
+    private void HandleUndoRedoGestures()
+    {
+        string rightGesture = manoReceiver.currentRightGesture;
+
+        if (rightGesture == "Thumb_Down")
+        {
+            if (hasReleasedUndoRedo)
+            {
+                PerformUndo();
+                hasReleasedUndoRedo = false;
+            }
+        }
+        else if (rightGesture == "Thumb_Up")
+        {
+            if (hasReleasedUndoRedo)
+            {
+                PerformRedo();
+                hasReleasedUndoRedo = false;
+            }
+        }
+        else hasReleasedUndoRedo = true; // Requires release before firing again
+    }
+
+    private void PerformUndo()
+    {
+        if (undoStack.Count == 0) return;
+
+        PaintAction action = undoStack.Pop();
+        redoStack.Push(action);
+
+        if (action.type == PaintAction.ActionType.Draw)
+        {
+            action.lineObj.SetActive(false);
+            activeLines.Remove(action.lineObj);
+        }
+        else if (action.type == PaintAction.ActionType.Erase)
+        {
+            action.lineObj.SetActive(true);
+            activeLines.Add(action.lineObj);
+        }
+
+        ShowFeedback("Undo");
+    }
+
+    private void PerformRedo()
+    {
+        if (redoStack.Count == 0) return;
+
+        PaintAction action = redoStack.Pop();
+        undoStack.Push(action);
+
+        if (action.type == PaintAction.ActionType.Draw)
+        {
+            action.lineObj.SetActive(true);
+            activeLines.Add(action.lineObj);
+        }
+        else if (action.type == PaintAction.ActionType.Erase)
+        {
+            action.lineObj.SetActive(false);
+            activeLines.Remove(action.lineObj);
+        }
+
+        ShowFeedback("Redo");
+    }
+
+    private void ShowFeedback(string message)
+    {
+        feedbackText.text = message;
+        feedbackTimer     = 1.0f;
+        feedbackTextObject.SetActive(true);
+        
+        // Place near the wrist...
+        if (manoReceiver.rightBones != null && manoReceiver.rightBones.Length > 0 && manoReceiver.rightBones[0] != null)
+            feedbackTextObject.transform.position = manoReceiver.rightBones[0].position - new Vector3(0, 0.8f, 0);
+    }
+
+    private void HandleFeedbackText()
+    {
+        if (feedbackTimer > 0)
+        {
+            feedbackTimer -= Time.deltaTime;
+            
+            // Billboard text - always faces the player's camera
+            if (Camera.main != null && feedbackTextObject.activeSelf)
+            {
+                Vector3 lookDirection                 = feedbackTextObject.transform.position - Camera.main.transform.position;
+                feedbackTextObject.transform.rotation = Quaternion.LookRotation(lookDirection, Camera.main.transform.up);
+            }
+            
+            if (feedbackTimer <= 0) feedbackTextObject.SetActive(false);
+        }
+    }
     
     void OnDisable()
     {
         if (laserBeam != null) laserBeam.enabled = false;
+        if (isCurrentlyPainting) FinalizeCurrentLine();
         isCurrentlyPainting = false;
     }
 }

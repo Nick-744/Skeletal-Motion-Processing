@@ -39,6 +39,8 @@ public class BraceletMenuCore : MonoBehaviour
     public Vector3 textOffset = new Vector3(-0.6f, 0f, 0f);
     [Tooltip("Size of the floating text")]
     public float fontSize     = 3f;
+    [Tooltip("Color of the floating text")]
+    public Color textColor    = Color.white;
 
     [Header("Interaction Settings")]
     [Tooltip("Gesture for right hand to toggle the menu")]
@@ -130,7 +132,7 @@ public class BraceletMenuCore : MonoBehaviour
         floatingText           = textObject.AddComponent<TextMeshPro>();
         floatingText.alignment = TextAlignmentOptions.Center;
         floatingText.fontSize  = fontSize;
-        floatingText.color     = Color.white;
+        floatingText.color     = textColor;
 
         // Start hidden
         floatingText.text = "";
