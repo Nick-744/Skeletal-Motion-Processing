@@ -9,9 +9,9 @@ public class LaserPainter : MonoBehaviour
     [Header("Dependencies")]
     public ManoLiveReceiver manoReceiver;
     [Tooltip("The Transform of the 'Paper' in scene.")]
-    public Transform paperTransform; 
+    public Transform paperTransform;
     [Tooltip("BlackInk - Prefab")]
-    public GameObject linePrefab; 
+    public GameObject linePrefab;
 
     [Header("Accuracy & Drawing Settings")]
     [Tooltip("Filter out the jitter from hand tracking. Higher = Smoother + delayed.")]
@@ -32,6 +32,9 @@ public class LaserPainter : MonoBehaviour
     private Vector3 smoothedPosition;
     private Vector3 velocity         = Vector3.zero;
     private bool isCurrentlyPainting = false;
+
+    // Lathe Mechanics
+    private bool showRotationAxis = true;
 
     // Undo/Redo - Erasing System
     private class PaintAction
@@ -55,6 +58,8 @@ public class LaserPainter : MonoBehaviour
     {
         if (paperTransform != null) paperCollider = paperTransform.GetComponent<Collider>();
 
+        if (paperTransform != null && showRotationAxis) CreateVisibleAxis();
+
         // Generate Red Laser Beam
         GameObject laserObj     = new GameObject("GeneratedLaserBeam");
         laserBeam               = laserObj.AddComponent<LineRenderer>();
@@ -68,6 +73,27 @@ public class LaserPainter : MonoBehaviour
         laserBeam.enabled       = false;
 
         CreateFeedbackText();
+    }
+
+    private void CreateVisibleAxis()
+    {
+        GameObject axisObj = new GameObject("PaperRotationAxis");
+        axisObj.transform.SetParent(paperTransform);
+        axisObj.transform.localPosition = Vector3.zero;
+        axisObj.transform.localRotation = Quaternion.identity;
+
+        LineRenderer axisLr  = axisObj.AddComponent<LineRenderer>();
+        axisLr.useWorldSpace = false;
+        axisLr.positionCount = 2;
+        axisLr.startWidth    = 0.05f;
+        axisLr.endWidth      = 0.05f;
+        axisLr.material      = new Material(Shader.Find("Sprites/Default"));
+        axisLr.startColor    = Color.blue;
+        axisLr.endColor      = Color.blue;
+        
+        // Draw the axis line relative to the paper's local Z-axis
+        axisLr.SetPosition(0, new Vector3(0, 0, -0.5f));
+        axisLr.SetPosition(1, new Vector3(0, 0,  0.5f));
     }
 
     private void CreateFeedbackText()
