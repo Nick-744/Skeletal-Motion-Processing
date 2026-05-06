@@ -8,7 +8,7 @@ public class BraceletMenuPaint : BraceletMenuCore
 
     protected override void Start()
     {
-        menuNames = new string[] { "Erase", "Empty 1", "Lathe Toggle" };
+        menuNames = new string[] { "Erase", "Save", "Lathe Toggle" };
         
         base.Start();
     }
@@ -30,7 +30,8 @@ public class BraceletMenuPaint : BraceletMenuCore
                 break;
             
             case 1:
-                laserPainter.currentMode = LaserPainter.PaintMode.Paint;
+                // Save mode
+                laserPainter.SaveDrawing();
                 break;
             
             case 2:
