@@ -12,6 +12,13 @@ public class BraceletMenuCity : BraceletMenuCore
     [Tooltip("GameObject holding the BearODMController.")]
     public BearODMController bearODMController;
 
+    protected override void Start()
+    {
+        menuNames = new string[] { "Traverse", "Move", "Bear Grappling" };
+        
+        base.Start();
+    }
+
     protected override void ApplyCurrentMode()
     {
         // Reset everything
@@ -49,15 +56,18 @@ public class BraceletMenuCity : BraceletMenuCore
                 break;
             
             case 0:
+                // Traverse mode
                 if (cameraController != null) cameraController.isTraverseMode = true;
                 break;
             
             case 1:
+                // Move mode
                 if (buildingGrabber != null) buildingGrabber.enabled = true;
                 if (handPointer     != null) handPointer.enabled     = true;
                 break;
             
             case 2:
+                // Bear Grappling mode
                 if (cameraController != null) cameraController.isODMMode   = true;
                 if (manoReceiver     != null) manoReceiver.isGrapplingMode = true;
 

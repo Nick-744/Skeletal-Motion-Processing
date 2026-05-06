@@ -34,7 +34,35 @@ public class LaserPainter : MonoBehaviour
     private bool isCurrentlyPainting = false;
 
     // Lathe Mechanics
-    private bool showRotationAxis = true;
+    private bool _showRotationAxis = false;
+    public bool showRotationAxis
+    {
+        get { return _showRotationAxis; }
+        set // Event Trigger...
+        {
+            if (_showRotationAxis == value) return;
+            _showRotationAxis = value;
+
+            if (paperTransform != null)
+            {
+                if (_showRotationAxis)
+                {
+                    ShrinkAndMovePaper();
+                    CreateVisibleAxis();
+                }
+                else
+                {
+                    RestorePaper();
+                    if (axisObj != null) axisObj.SetActive(false);
+                }
+            }
+        }
+    }
+    
+    private GameObject axisObj;
+    private Vector3 originalPaperScale;
+    private Vector3 originalPaperPos;
+    private bool hasSavedOriginalPaper = false;
 
     // Undo/Redo - Erasing System
     private class PaintAction
@@ -58,12 +86,6 @@ public class LaserPainter : MonoBehaviour
     {
         if (paperTransform != null) paperCollider = paperTransform.GetComponent<Collider>();
 
-        if (paperTransform != null && showRotationAxis)
-        {
-            ShrinkAndMovePaper();
-            CreateVisibleAxis();
-        }
-
         // Generate Red Laser Beam
         GameObject laserObj     = new GameObject("GeneratedLaserBeam");
         laserBeam               = laserObj.AddComponent<LineRenderer>();
@@ -81,7 +103,9 @@ public class LaserPainter : MonoBehaviour
 
     private void CreateVisibleAxis()
     {
-        GameObject axisObj = new GameObject("PaperRotationAxis");
+        if (axisObj != null) { axisObj.SetActive(true); return; }
+
+        axisObj = new GameObject("PaperRotationAxis");
         axisObj.transform.SetParent(paperTransform);
         axisObj.transform.localPosition = Vector3.zero;
         axisObj.transform.localRotation = Quaternion.identity;
@@ -109,6 +133,13 @@ public class LaserPainter : MonoBehaviour
         MeshFilter mf = paperTransform.GetComponent<MeshFilter>();
         if (mf == null || mf.sharedMesh == null) return;
 
+        if (!hasSavedOriginalPaper)
+        {
+            originalPaperScale    = paperTransform.localScale;
+            originalPaperPos      = paperTransform.localPosition;
+            hasSavedOriginalPaper = true;
+        }
+
         float unscaledWidth = mf.sharedMesh.bounds.size.x;
 
         // Halve the local scale X
@@ -119,6 +150,15 @@ public class LaserPainter : MonoBehaviour
         // Shift paper to my right (half the new scaled width) -> New left edge = Original center
         float offset             = (unscaledWidth * newScale.x) * 0.5f; 
         paperTransform.position += paperTransform.right * offset;
+    }
+
+    private void RestorePaper()
+    {
+        if (hasSavedOriginalPaper && paperTransform != null)
+        {
+            paperTransform.localScale    = originalPaperScale;
+            paperTransform.localPosition = originalPaperPos;
+        }
     }
 
     private void CreateFeedbackText()

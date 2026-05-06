@@ -8,7 +8,7 @@ public class BraceletMenuPaint : BraceletMenuCore
 
     protected override void Start()
     {
-        menuNames = new string[] { "Erase", "Empty 1", "Empty 2" };
+        menuNames = new string[] { "Erase", "Empty 1", "Lathe Toggle" };
         
         base.Start();
     }
@@ -25,7 +25,7 @@ public class BraceletMenuPaint : BraceletMenuCore
                 break;
             
             case 0:
-                // Erase
+                // Erase mode
                 laserPainter.currentMode = LaserPainter.PaintMode.Erase;
                 break;
             
@@ -34,7 +34,8 @@ public class BraceletMenuPaint : BraceletMenuCore
                 break;
             
             case 2:
-                laserPainter.currentMode = LaserPainter.PaintMode.Paint;
+                // Toggle Lathe mode
+                laserPainter.showRotationAxis = !laserPainter.showRotationAxis;
                 break;
         }
     }

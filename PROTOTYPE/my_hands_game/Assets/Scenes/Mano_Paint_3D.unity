@@ -784,11 +784,11 @@ MonoBehaviour:
   manoReceiver: {fileID: 1885079534}
   paperTransform: {fileID: 1557026799}
   linePrefab: {fileID: 7898815140111681142, guid: 2a131ef6e2a5ee14593678643b064c34, type: 3}
-  showRotationAxis: 1
   smoothTime: 0.1
   minPointDistance: 0.01
   eraseRadius: 0.05
   currentMode: 0
+  showRotationAxis: 0
 --- !u!4 &1034265667
 Transform:
   m_ObjectHideFlags: 0
