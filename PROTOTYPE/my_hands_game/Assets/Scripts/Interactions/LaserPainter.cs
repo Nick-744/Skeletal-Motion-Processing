@@ -466,9 +466,17 @@ public class LaserPainter : MonoBehaviour
 
         List<Vector3> allPoints = new List<Vector3>();
 
-        // Center axis definition
-        Vector3 axisOrigin    = axisObj != null ? axisObj.transform.position : paperTransform.position;
-        Vector3 axisDirection = axisObj != null ? axisObj.transform.forward : paperTransform.forward; 
+        // Rotation axis definition - Blue line (left edge of the paper)
+        Vector3 axisOrigin    = paperTransform.position;
+        Vector3 axisDirection = paperTransform.forward;
+
+        if (axisObj != null)
+        {
+            MeshFilter mf   = paperTransform.GetComponent<MeshFilter>();
+            float leftEdgeX = (mf != null && mf.sharedMesh != null) ? -mf.sharedMesh.bounds.extents.x : -0.5f;
+            axisOrigin      = paperTransform.TransformPoint(new Vector3(leftEdgeX, 0, 0));
+            axisDirection   = axisObj.transform.forward;
+        }
 
         // Gather all line vertices
         List<Vector3> lineVertices = new List<Vector3>();
@@ -505,7 +513,7 @@ public class LaserPainter : MonoBehaviour
         using (StreamWriter sw = new StreamWriter(filePath))
         {
             sw.WriteLine("# Lathe Point Cloud");
-            foreach (Vector3 p in allPoints) sw.WriteLine($"v {p.x} {p.y} {p.z}");
+            foreach (Vector3 p in allPoints) sw.WriteLine(System.FormattableString.Invariant($"v {p.x} {p.y} {p.z}"));
         }
 
         ShowFeedback("Saved OBJ");
