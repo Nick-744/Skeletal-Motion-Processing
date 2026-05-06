@@ -58,7 +58,11 @@ public class LaserPainter : MonoBehaviour
     {
         if (paperTransform != null) paperCollider = paperTransform.GetComponent<Collider>();
 
-        if (paperTransform != null && showRotationAxis) CreateVisibleAxis();
+        if (paperTransform != null && showRotationAxis)
+        {
+            ShrinkAndMovePaper();
+            CreateVisibleAxis();
+        }
 
         // Generate Red Laser Beam
         GameObject laserObj     = new GameObject("GeneratedLaserBeam");
@@ -91,9 +95,30 @@ public class LaserPainter : MonoBehaviour
         axisLr.startColor    = Color.blue;
         axisLr.endColor      = Color.blue;
         
-        // Draw the axis line relative to the paper's local Z-axis
-        axisLr.SetPosition(0, new Vector3(0, 0, -0.5f));
-        axisLr.SetPosition(1, new Vector3(0, 0,  0.5f));
+        // Original center axis -> Left edge of the paper - Local Space (shift to my right + halve the width)
+        MeshFilter mf   = paperTransform.GetComponent<MeshFilter>();
+        float leftEdgeX = (mf != null && mf.sharedMesh != null) ? -mf.sharedMesh.bounds.extents.x : -0.5f;
+
+        // Draw the axis line along the (new) left edge
+        axisLr.SetPosition(0, new Vector3(leftEdgeX, 0, -0.5f));
+        axisLr.SetPosition(1, new Vector3(leftEdgeX, 0,  0.5f));
+    }
+
+    private void ShrinkAndMovePaper()
+    {
+        MeshFilter mf = paperTransform.GetComponent<MeshFilter>();
+        if (mf == null || mf.sharedMesh == null) return;
+
+        float unscaledWidth = mf.sharedMesh.bounds.size.x;
+
+        // Halve the local scale X
+        Vector3 newScale          = paperTransform.localScale;
+        newScale.x               *= 0.5f;
+        paperTransform.localScale = newScale;
+
+        // Shift paper to my right (half the new scaled width) -> New left edge = Original center
+        float offset             = (unscaledWidth * newScale.x) * 0.5f; 
+        paperTransform.position += paperTransform.right * offset;
     }
 
     private void CreateFeedbackText()
