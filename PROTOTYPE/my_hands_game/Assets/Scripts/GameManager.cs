@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
     public HandPointer handPointer;
 
     [Header("Dependencies")]
-    [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
+    [Tooltip("GameObject holding the ManoLiveReceiver script.")]
     public ManoLiveReceiver manoReceiver;
 
     [Header("Gesture Settings")]

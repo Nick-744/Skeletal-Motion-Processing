@@ -3,7 +3,7 @@ using UnityEngine;
 public class HandPointer : MonoBehaviour
 {
     [Header("Dependencies")]
-    [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
+    [Tooltip("GameObject holding the ManoLiveReceiver script.")]
     public ManoLiveReceiver manoReceiver;
 
     [Header("Settings")]

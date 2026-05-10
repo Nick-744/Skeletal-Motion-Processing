@@ -3,11 +3,11 @@ using UnityEngine;
 public class BearInteraction : MonoBehaviour
 {
     [Header("Connections")]
-    [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
+    [Tooltip("GameObject holding the ManoLiveReceiver script.")]
     public ManoLiveReceiver manoReceiver;
-    [Tooltip("Drag the HandController object here.")]
+    [Tooltip("HandController object.")]
     public HandPointer handPointer;
-    [Tooltip("Drag the Canvas/Dialogue Bubble GameObject here.")]
+    [Tooltip("Canvas/Dialogue Bubble GameObject.")]
     public GameObject dialogueBubble;
 
     [Header("Bear Armature")]

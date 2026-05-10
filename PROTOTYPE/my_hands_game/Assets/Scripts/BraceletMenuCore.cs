@@ -4,7 +4,7 @@ using TMPro;
 public class BraceletMenuCore : MonoBehaviour
 {
     [Header("Dependencies")]
-    [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
+    [Tooltip("GameObject holding the ManoLiveReceiver script.")]
     public ManoLiveReceiver manoReceiver;
 
     [Header("Bracelet Settings")]

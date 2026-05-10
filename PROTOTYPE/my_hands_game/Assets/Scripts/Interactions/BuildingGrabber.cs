@@ -4,7 +4,7 @@ using UnityEngine;
 public class BuildingGrabber : MonoBehaviour
 {
     [Header("Settings")]
-    [Tooltip("Enter the name (or part of the name) of the objects you want to be able to grab.")]
+    [Tooltip("Enter the name (or part of the name) of the objects able to grab.")]
     public string targetObjectName = "cube";
 
     public float followSmoothSpeed = 12f; // Smooth follow for the grabbed building

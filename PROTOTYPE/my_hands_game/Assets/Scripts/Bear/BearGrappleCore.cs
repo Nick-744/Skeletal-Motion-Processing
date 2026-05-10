@@ -4,16 +4,16 @@ using Bhaptics.SDK2;
 public class BearGrappleCore : MonoBehaviour
 {
     [Header("Dependencies")]
-    [Tooltip("Drag the GameObject holding the ManoLiveReceiver script here.")]
+    [Tooltip("GameObject holding the ManoLiveReceiver script.")]
     public ManoLiveReceiver manoReceiver;
 
-    [Tooltip("Drag the Bear's root Transform here.")]
+    [Tooltip("Bear's root Transform.")]
     public Transform bearRoot;
 
     [Header("Armature Targets")]
-    [Tooltip("Drag the bear's Left Arm bone here.")]
+    [Tooltip("Bear's Left Arm bone.")]
     public Transform leftArm;
-    [Tooltip("Drag the bear's Right Arm bone here.")]
+    [Tooltip("Bear's Right Arm bone.")]
     public Transform rightArm;
 
     [Header("Base Settings")]
