@@ -406,8 +406,8 @@ public class LaserPainter : MonoBehaviour
 
         if (showRotationAxis)
         {
-            string filePath = Path.Combine(desktopPath, "LatheDrawing_" + timestamp + ".obj");
-            ExportLatheOBJ(filePath);
+            string filePath = Path.Combine(desktopPath, "LatheDrawing_" + timestamp + ".ply");
+            ExportLathePLY(filePath);
         }
         else
         {
@@ -458,10 +458,10 @@ public class LaserPainter : MonoBehaviour
         ShowFeedback("Saved PNG");
     }
 
-    private void ExportLatheOBJ(string filePath)
+    private void ExportLathePLY(string filePath)
     {
         // Generate a point cloud by rotating the 2D ink lines 360 degrees
-        int radialSegments = 36;
+        int radialSegments = 120;
         float angleStep    = 360f / radialSegments;
 
         List<Vector3> allPoints = new List<Vector3>();
@@ -509,14 +509,23 @@ public class LaserPainter : MonoBehaviour
             }
         }
 
-        // Write OBJ
+        // Write PLY
         using (StreamWriter sw = new StreamWriter(filePath))
         {
-            sw.WriteLine("# Lathe Point Cloud");
-            foreach (Vector3 p in allPoints) sw.WriteLine(System.FormattableString.Invariant($"v {p.x} {p.y} {p.z}"));
+            // Write PLY Header
+            sw.WriteLine("ply");
+            sw.WriteLine("format ascii 1.0");
+            sw.WriteLine($"element vertex {allPoints.Count}");
+            sw.WriteLine("property float x");
+            sw.WriteLine("property float y");
+            sw.WriteLine("property float z");
+            sw.WriteLine("end_header");
+
+            // Write Point Data
+            foreach (Vector3 p in allPoints) sw.WriteLine(System.FormattableString.Invariant($"{p.x} {p.y} {p.z}"));
         }
 
-        ShowFeedback("Saved OBJ");
+        ShowFeedback("Saved PLY");
     }
     
     void OnDisable()
