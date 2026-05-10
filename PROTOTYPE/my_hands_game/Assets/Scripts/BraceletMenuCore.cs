@@ -254,7 +254,7 @@ public class BraceletMenuCore : MonoBehaviour
         else hasReleasedLeftGesture = true;
     }
 
-    private void ExecuteSelection(int index)
+    protected virtual void ExecuteSelection(int index)
     {
         // Toggle logic: If the selected option is already active, turn it off...
         if (currentActiveMode == index) currentActiveMode = -1; // Default

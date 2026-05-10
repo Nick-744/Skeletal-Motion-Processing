@@ -13,6 +13,28 @@ public class BraceletMenuPaint : BraceletMenuCore
         base.Start();
     }
 
+    protected override void ExecuteSelection(int index)
+    {
+        // Save must work like a button, not a mode change!
+        if (index == 1)
+        {
+            if (laserPainter != null) laserPainter.SaveDrawing();
+
+            return;
+        }
+
+        // Lathe Toggle must work like a button, not a mode change!
+        if (index == 2)
+        {
+            if (laserPainter != null)
+                laserPainter.showRotationAxis = !laserPainter.showRotationAxis;
+
+            return;
+        }
+
+        base.ExecuteSelection(index);
+    }
+
     protected override void ApplyCurrentMode()
     {
         if (laserPainter == null) return;
@@ -27,16 +49,6 @@ public class BraceletMenuPaint : BraceletMenuCore
             case 0:
                 // Erase mode
                 laserPainter.currentMode = LaserPainter.PaintMode.Erase;
-                break;
-            
-            case 1:
-                // Save mode
-                laserPainter.SaveDrawing();
-                break;
-            
-            case 2:
-                // Toggle Lathe mode
-                laserPainter.showRotationAxis = !laserPainter.showRotationAxis;
                 break;
         }
     }

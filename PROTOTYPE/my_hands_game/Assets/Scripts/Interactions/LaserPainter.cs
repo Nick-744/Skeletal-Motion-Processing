@@ -423,9 +423,11 @@ public class LaserPainter : MonoBehaviour
         if (paperTransform == null) yield break;
 
         // Create temporary orthographic camera
-        GameObject camObj      = new GameObject("TempRenderCam");
-        Camera renderCam       = camObj.AddComponent<Camera>();
-        renderCam.orthographic = true;
+        GameObject camObj         = new GameObject("TempRenderCam");
+        Camera renderCam          = camObj.AddComponent<Camera>();
+        renderCam.orthographic    = true;
+        renderCam.clearFlags      = CameraClearFlags.SolidColor;
+        renderCam.backgroundColor = Color.clear;
         
         MeshRenderer paperRenderer = paperTransform.GetComponent<MeshRenderer>();
         if (paperRenderer != null)
@@ -441,7 +443,7 @@ public class LaserPainter : MonoBehaviour
         RenderTexture rt        = new RenderTexture(resWidth, resHeight, 24);
         renderCam.targetTexture = rt;
         
-        Texture2D screenShot = new Texture2D(resWidth, resHeight, TextureFormat.RGB24, false);
+        Texture2D screenShot = new Texture2D(resWidth, resHeight, TextureFormat.RGBA32, false);
         renderCam.Render();
         RenderTexture.active = rt;
         screenShot.ReadPixels(new Rect(0, 0, resWidth, resHeight), 0, 0);
