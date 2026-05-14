@@ -857,6 +857,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PainterTraversal
   manoReceiver: {fileID: 1885079534}
   playerRig: {fileID: 1396682964}
+  paperTransform: {fileID: 1557026799}
+  traverseSensitivity: {x: -0.25, y: 2, z: 2}
   traverseMoveSpeed: 0.01
   traverseDeadzone: {x: 5, y: 5, z: 5}
 --- !u!1 &1557026798
