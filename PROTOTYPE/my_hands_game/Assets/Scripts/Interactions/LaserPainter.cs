@@ -58,6 +58,9 @@ public partial class LaserPainter : MonoBehaviour
     {
         if (manoReceiver == null || paperCollider == null || linePrefab == null) return;
 
+        // Ensure 3D mode and Lathe toggle are mutually exclusive!
+        if (traversal != null && traversal.is3DMode && showRotationAxis) { showRotationAxis = false; }
+
         HandleUndoRedoGestures();
         HandleFeedbackText();
 

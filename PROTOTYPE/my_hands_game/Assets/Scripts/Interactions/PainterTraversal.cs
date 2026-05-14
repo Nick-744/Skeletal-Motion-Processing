@@ -72,35 +72,41 @@ public class PainterTraversal : MonoBehaviour
         {
             if (modeToggleCooldown <= 0f)
             {
-                is3DMode           = !is3DMode;
+                Set3DMode(!is3DMode);
                 modeToggleCooldown = 1.0f; // 1 second cooldown
-                
-                if (is3DMode && paperTransform != null)
-                {
-                    // Parent the paper to the player rig
-                    paperTransform.SetParent(playerRig);
-
-                    // Position the paper based on starting relative positions
-                    paperTransform.localPosition = initialRelativePos;
-                    paperTransform.localRotation = initialRelativeRot;
-
-                    if (paperRenderer != null && paperRenderer.material != null)
-                    {
-                        Color c = paperRenderer.material.color;
-                        c.a     = originalPaperColor.a * 0.5f; // Make it a bit transparent
-                        paperRenderer.material.color = c;
-                    }
-                }
-                else if (!is3DMode && paperTransform != null) 
-                {
-                    paperTransform.SetParent(initialParent);
-                    if (paperRenderer != null && paperRenderer.material != null) paperRenderer.material.color = originalPaperColor;
-                }
             }
         }
 
         if (is3DMode) Handle3DTraverseMode();
         else          Handle2DTraverseMode();
+    }
+
+    public void Set3DMode(bool enable)
+    {
+        if (is3DMode == enable) return;
+        is3DMode = enable;
+
+        if (is3DMode && paperTransform != null)
+        {
+            // Parent the paper to the player rig
+            paperTransform.SetParent(playerRig);
+
+            // Position the paper based on starting relative positions
+            paperTransform.localPosition = initialRelativePos;
+            paperTransform.localRotation = initialRelativeRot;
+
+            if (paperRenderer != null && paperRenderer.material != null)
+            {
+                Color c = paperRenderer.material.color;
+                c.a     = originalPaperColor.a * 0.5f; // Make it a bit transparent
+                paperRenderer.material.color = c;
+            }
+        }
+        else if (!is3DMode && paperTransform != null) 
+        {
+            paperTransform.SetParent(initialParent);
+            if (paperRenderer != null && paperRenderer.material != null) paperRenderer.material.color = originalPaperColor;
+        }
     }
 
     private void Handle3DTraverseMode()

@@ -27,7 +27,11 @@ public class BraceletMenuPaint : BraceletMenuCore
         if (index == 2)
         {
             if (laserPainter != null)
+            {
                 laserPainter.showRotationAxis = !laserPainter.showRotationAxis;
+                if (laserPainter.showRotationAxis && laserPainter.traversal != null && laserPainter.traversal.is3DMode)
+                    laserPainter.traversal.Set3DMode(false);
+            }
 
             return;
         }
