@@ -73,6 +73,8 @@ public partial class LaserPainter
 
     private void HandleUndoRedoGestures()
     {
+        if (currentMode != PaintMode.Erase) return;
+
         string rightGesture = manoReceiver.currentRightGesture;
 
         if (rightGesture == "Thumb_Down")

@@ -788,6 +788,7 @@ MonoBehaviour:
   manoReceiver: {fileID: 1885079534}
   paperTransform: {fileID: 1557026799}
   linePrefab: {fileID: 7898815140111681142, guid: 2a131ef6e2a5ee14593678643b064c34, type: 3}
+  traversal: {fileID: 1396682965}
   smoothTime: 0.1
   minPointDistance: 0.01
   eraseRadius: 0.05
@@ -861,6 +862,7 @@ MonoBehaviour:
   traverseSensitivity: {x: -0.25, y: 2, z: 2}
   traverseMoveSpeed: 0.01
   traverseDeadzone: {x: 5, y: 5, z: 5}
+  is3DMode: 0
 --- !u!1 &1557026798
 GameObject:
   m_ObjectHideFlags: 0

@@ -20,7 +20,8 @@ public class PainterTraversal : MonoBehaviour
     [Tooltip("Deadzone threshold to prevent accidental drifting.")]
     public Vector3 traverseDeadzone = new Vector3(5.0f, 5.0f, 5.0f);
 
-    private bool is3DMode            = false;
+    [HideInInspector]
+    public bool is3DMode             = false;
     private float modeToggleCooldown = 0f;
 
     // Traverse logic state

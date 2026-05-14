@@ -11,11 +11,17 @@ public partial class LaserPainter
     {
         string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         string timestamp   = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        bool is3D          = traversal != null && traversal.is3DMode;
 
-        if (showRotationAxis)
+        if (showRotationAxis && !is3D)
         {
             string filePath = Path.Combine(desktopPath, "LatheDrawing_" + timestamp + ".ply");
             ExportLathePLY(filePath);
+        }
+        else if (is3D)
+        {
+            string filePath = Path.Combine(desktopPath, "3DDrawing_" + timestamp + ".ply");
+            ExportPointcloudPLY(filePath);
         }
         else
         {
@@ -136,5 +142,43 @@ public partial class LaserPainter
         }
 
         ShowFeedback("Saved PLY");
+    }
+
+    private void ExportPointcloudPLY(string filePath)
+    {
+        List<Vector3> allPoints = new List<Vector3>();
+
+        // Gather all line vertices
+        foreach (GameObject lineObj in activeLines)
+        {
+            if (lineObj.activeSelf)
+            {
+                LineRenderer lr = lineObj.GetComponent<LineRenderer>();
+                if (lr != null)
+                {
+                    Vector3[] pos = new Vector3[lr.positionCount];
+                    lr.GetPositions(pos);
+                    allPoints.AddRange(pos);
+                }
+            }
+        }
+
+        // Write PLY
+        using (StreamWriter sw = new StreamWriter(filePath))
+        {
+            // Write PLY Header
+            sw.WriteLine("ply");
+            sw.WriteLine("format ascii 1.0");
+            sw.WriteLine($"element vertex {allPoints.Count}");
+            sw.WriteLine("property float x");
+            sw.WriteLine("property float y");
+            sw.WriteLine("property float z");
+            sw.WriteLine("end_header");
+
+            // Write Point Data
+            foreach (Vector3 p in allPoints) sw.WriteLine(System.FormattableString.Invariant($"{p.x} {p.y} {p.z}"));
+        }
+
+        ShowFeedback("Saved PCD PLY");
     }
 }

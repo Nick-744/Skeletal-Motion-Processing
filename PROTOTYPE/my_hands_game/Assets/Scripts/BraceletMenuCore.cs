@@ -205,7 +205,7 @@ public class BraceletMenuCore : MonoBehaviour
             {
                 targetLocalPosition = belowBraceletLocalPosition;
                 targetScale         = Vector3.one * activeBallScale;
-                targetColor         = activeColor;
+                targetColor         = (i == currentActiveMode) ? selectedColor : activeColor;
             }
             else
             {

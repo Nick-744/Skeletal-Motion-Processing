@@ -12,6 +12,8 @@ public partial class LaserPainter : MonoBehaviour
     public Transform paperTransform;
     [Tooltip("BlackInk - Prefab")]
     public GameObject linePrefab;
+    [Tooltip("GameObject holding the PainterTraversal script.")]
+    public PainterTraversal traversal;
 
     [Header("Accuracy & Drawing Settings")]
     [Tooltip("Filter out the jitter from hand tracking. Higher = Smoother + delayed.")]
