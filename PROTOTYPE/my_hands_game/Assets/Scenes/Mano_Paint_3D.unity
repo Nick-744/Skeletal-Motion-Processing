@@ -989,6 +989,10 @@ PrefabInstance:
       value: ManoController
       objectReference: {fileID: 0}
     - target: {fileID: 5504575309182534526, guid: be88fb51f68a9a5458d76d069d06f6bd, type: 3}
+      propertyPath: logLatency
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5504575309182534526, guid: be88fb51f68a9a5458d76d069d06f6bd, type: 3}
       propertyPath: leftHandRoot
       value: 
       objectReference: {fileID: 506092535}

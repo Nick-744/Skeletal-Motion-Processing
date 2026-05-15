@@ -36,6 +36,13 @@ public class ManoLiveReceiver : MonoBehaviour
     public bool isGrapplingMode   = false;
     private bool wasGrapplingMode = false; // Tracks changes
 
+    [Header("Latency Logging")]
+    public bool logLatency          = false;
+    public float logDurationMinutes = 7f;
+    private float logTimer          = 0f;
+    private System.IO.StreamWriter latencyFileWriter;
+    private bool isLogging          = false;
+
     private Thread receiveThread;
     private UdpClient client;
     private string latestJson = "";
@@ -58,6 +65,19 @@ public class ManoLiveReceiver : MonoBehaviour
 
     void Start()
     {
+        if (logLatency)
+        {
+            try
+            {
+                string path       = System.IO.Path.Combine(Application.dataPath, "LatencyLog.csv");
+                latencyFileWriter = new System.IO.StreamWriter(path, false);
+                latencyFileWriter.WriteLine("TimestampMS,LatencyMS");
+                isLogging         = true;
+                Debug.Log($"Started logging latency to {path} for {logDurationMinutes} minutes.");
+            }
+            catch (System.Exception e) { Debug.LogError($"Error opening log file: {e.Message}"); }
+        }
+
         receiveThread = new Thread(new ThreadStart(ReceiveData)) { IsBackground = true };
 
         receiveThread.Start();
@@ -109,7 +129,19 @@ public class ManoLiveReceiver : MonoBehaviour
             // Calculate Latency
             long currentTimeMs   = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             long softwareLatency = currentTimeMs - payload.timestamp_ms;
-            //Debug.Log($"Frame Latency: {softwareLatency} ms");
+
+            if (isLogging)
+            {
+                logTimer += Time.deltaTime;
+                if (logTimer <= logDurationMinutes * 60f) latencyFileWriter.WriteLine($"{currentTimeMs},{softwareLatency}");
+                else
+                {
+                    isLogging         = false;
+                    latencyFileWriter.Close();
+                    latencyFileWriter = null;
+                    Debug.Log("Finished latency logging.");
+                }
+            }
 
             // ---< CROSS-MAPPING >--- //
 
@@ -176,6 +208,12 @@ public class ManoLiveReceiver : MonoBehaviour
 
     void OnApplicationQuit()
     {
+        if (latencyFileWriter != null)
+        {
+            latencyFileWriter.Close();
+            latencyFileWriter = null;
+        }
+
         if (receiveThread != null) receiveThread.Abort();
         if (client != null) client.Close();
     }

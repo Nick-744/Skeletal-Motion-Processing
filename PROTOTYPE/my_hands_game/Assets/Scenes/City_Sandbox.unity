@@ -2922,6 +2922,7 @@ MonoBehaviour:
   - Bear Grappling
   textOffset: {x: -0.6, y: 0, z: 0}
   fontSize: 3
+  textColor: {r: 1, g: 1, b: 1, a: 1}
   rightActivationGesture: Victory
   leftSelectionGesture: Thumb_Up
   resetGesture: Thumb_Down
@@ -3253,6 +3254,10 @@ PrefabInstance:
     - target: {fileID: 5014458929043846411, guid: be88fb51f68a9a5458d76d069d06f6bd, type: 3}
       propertyPath: m_Name
       value: ManoController
+      objectReference: {fileID: 0}
+    - target: {fileID: 5504575309182534526, guid: be88fb51f68a9a5458d76d069d06f6bd, type: 3}
+      propertyPath: logLatency
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5504575309182534526, guid: be88fb51f68a9a5458d76d069d06f6bd, type: 3}
       propertyPath: leftHandRoot
