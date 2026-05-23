@@ -8,6 +8,23 @@ round-off errors from different computation orders. To turn them off,
 set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
 '''
 
+import sys
+class Suppress:
+    ''' Context Manager Protocol to silence MediaPipe's Info/Warning messages. '''
+    def __enter__(self):
+        self.devnull_fd      = os.open(os.devnull, os.O_WRONLY)
+        self.saved_stderr_fd = os.dup(sys.stderr.fileno())
+        os.dup2(self.devnull_fd, sys.stderr.fileno())
+
+        return;
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.dup2(self.saved_stderr_fd, sys.stderr.fileno())
+        os.close(self.devnull_fd)
+        os.close(self.saved_stderr_fd)
+
+        return;
+
 import threading
 from time import time
 from typing import NewType
@@ -52,8 +69,9 @@ class HandTracker:
             min_tracking_confidence       = min_confidence
         )
 
-        # The gesture recognizer (+ integrated hand landmarker) is initialized...
-        self._gesture_recognizer = GestureRecognizer.create_from_options(options)
+        with Suppress():
+            # The gesture recognizer (+ integrated hand landmarker) is initialized...
+            self._gesture_recognizer = GestureRecognizer.create_from_options(options)
 
         return;
 
