@@ -1,3 +1,4 @@
+% !TEX TS-program = xelatex
 \documentclass[11pt]{article}
 
 % Language setting
@@ -25,10 +26,26 @@
 \titlespacing{\paragraph}
 {5.25pc}{0pt}{0.75pc}
 
-\usepackage[style=ieee]{biblatex}
-\addbibresource{thesis.bib}
+% Format - numbered sections (horizontal lines)
+\titleformat{name=\section}[display]
+  {\normalfont\Huge\bfseries\filcenter}
+  {\rule[0.32em]{0.25\textwidth}{2pt}\quad CHAPTER \thesection \quad\rule[0.32em]{0.25\textwidth}{2pt}}
+  {15pt}
+  {\Huge}
+  
+% Format - unnumbered sections
+\newcommand{\unnumberedchapter}[1]{
+  \rule[0.32em]{0.2\textwidth}{2pt}\quad #1 \quad\rule[0.32em]{0.2\textwidth}{2pt}
+}
 
-\DeclareFieldFormat{urldate}{} % no access dates
+\titleformat{name=\section,numberless}[block]
+  {\normalfont\Huge\bfseries\filcenter}
+  {}
+  {0pt}
+  {\unnumberedchapter}
+  
+% Adjust spacing
+\titlespacing*{\section}{0pt}{4ex}{3ex}
 
 % Font (noto)
 %\usepackage[sfdefault]{noto}
@@ -60,6 +77,13 @@
 %%%%%%%%%%%%%%% ACRONYMS %%%%%%%%%%%%%%%%%
 \makeglossaries
 \newacronym{cg}{CG}{Computer Graphics}
+\newacronym{hci}{HCI}{Human-Computer Interaction}
+\newacronym{cpu}{CPU}{Central Processing Unit}
+\newacronym{vr}{VR}{Virtual Reality}
+\newacronym{fbx}{FBX}{Filmbox}
+\newacronym{udp}{UDP}{User Datagram Protocol}
+\newacronym{ik}{IK}{Inverse Kinematics}
+\newacronym{pca}{PCA}{Principal Component Analysis}
 
 
 
@@ -93,13 +117,16 @@
 \printglossary[type=\acronymtype,nonumberlist]
 \newpage
 
-\input{content/introduction}
+\input{content/chapter_1}
 
 
 
 
 \newpage
 \sloppy 
-\printbibliography
+
+% Bibliography system
+\bibliographystyle{ieeetr}
+\bibliography{thesis}
 
 \end{document}

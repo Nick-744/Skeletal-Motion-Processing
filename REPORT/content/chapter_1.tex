@@ -1,0 +1,77 @@
+% Chapter 1 - Introduction
+
+\section{Introduction}\label{sec:introduction}
+
+The starting point for this thesis was a simple question: can you make a
+hybrid game and editing application driven by hand motion using just a webcam and
+a regular \acrshort{cpu}, with no extra hardware at all? No \acrshort{vr} headset,
+no depth camera, no special gloves --- just the camera that is already built into a laptop.
+This idea came from wanting to make \acrshort{hci} as accessible as possible.
+Expensive peripherals limit who can use a system, and the setup time alone is
+often a reason people do not bother. The human hand is the most natural
+controller there is, and ideally it should work out of the box.
+
+This is now within reach thanks to frameworks like Google MediaPipe
+\cite{zhang2020mediapipehands}, which can detect both hands in real time
+from a standard colour camera, outputting 21 three-dimensional landmarks
+per hand at around 30 frames per second on a commodity machine.
+The problem, however, is that these raw landmarks are not directly
+useful for driving a skeleton or analysing motion. Their scale changes with
+how close the hand is to the camera, depth is estimated rather than measured,
+and there is no information about joint hierarchy or anatomically valid
+ranges of motion --- it is just a flat list of points in space.
+
+\subsection{The Problem This Thesis Addresses}\label{subsec:gap}
+
+To actually drive a hand avatar or store motion data in a meaningful way,
+you need a \emph{canonical} representation: something that describes the
+hand as a set of joint rotations along a fixed kinematic tree, independent
+of hand size or camera distance. The MANO parametric hand model
+\cite{romero2017embodiedhands} is exactly this. It represents hand pose
+as 15 joint rotations plus a global orientation, in a predefined parent-child
+kinematic tree whose parameters (blend shapes, skinning weights, joint regressor)
+were learned from real hand scans. A pose in MANO space can drive a 3-D mesh,
+be logged, compared across sessions, or passed to a classifier without
+any additional preprocessing.
+
+The core challenge of this thesis is therefore to bridge the gap between
+MediaPipe's raw output and MANO's canonical representation, in real time,
+on a CPU, and with low enough latency to feel responsive in an interactive
+application.
+
+\subsection{Contributions}\label{subsec:contributions}
+
+The work presented here covers the full pipeline from webcam input to
+a running Unity application. Specifically:
+
+A hand tracking and 3-D coordinate module (\texttt{hand\_engine},
+\texttt{hand\_kinematics\_3D}) retrieves metric landmarks from MediaPipe
+and filters them using the 1\euro{} filter \cite{casiez2012oneeuro} to remove
+jitter while keeping latency low.
+
+An Adaptive \acrshort{ik} solver (\texttt{MANOkinematics}) maps the 21
+MediaPipe landmarks onto MANO's 16-joint skeleton using the AIK algorithm
+\cite{zhou2020monocular}, producing axis-angle joint rotations that are invariant
+to hand scale and camera distance.
+
+A UDP streaming layer (\texttt{mano\_unity\_streamer},
+\texttt{ManoLiveReceiver.cs}) sends the solved pose and detected gesture
+for both hands to Unity as a JSON datagram, achieving a measured mean
+end-to-end latency of \SI{30.68}{\ms} over more than 20\,000 frames.
+
+A Unity prototype (\texttt{my\_hands\_game}) with four scenes that each
+use the skeletal stream differently: a physics-based grapple interaction,
+an editable city environment, a spring-physics face deformer, and a 2-D/3-D
+painting tool with point-cloud export.
+
+\subsection{Thesis Structure}\label{subsec:structure}
+
+\Cref{sec:background} covers the theoretical background.
+\Cref{sec:stateoftheart} reviews related work.
+\Cref{sec:architecture} describes the overall system design.
+\Cref{sec:tracking} details the hand tracking pipeline.
+\Cref{sec:mano} explains the MANO fitting and IK solving.
+\Cref{sec:unity} covers the Unity integration and the four scenes.
+\Cref{sec:evaluation} presents the latency results.
+\Cref{sec:reconstruction} describes the 3-D surface reconstruction pipeline.
+\Cref{sec:conclusion} concludes with limitations and future directions.
