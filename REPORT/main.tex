@@ -55,6 +55,8 @@
 \setmainfont{Noto Sans}
 \usepackage{microtype}
 \usepackage{indentfirst}
+\usepackage{setspace}
+\setstretch{1.3}
 \usepackage{pdfpages}
 \usepackage[mode=match]{siunitx}
 
@@ -71,6 +73,7 @@
 %\renewcommand{\figurename}{Fig.}
 %\addto\captionsenglish{\renewcommand{\figurename}{Fig.}}
 %\addto\captionsenglish{\renewcommand{\figureautorefname}{Fig.}}
+\addto\captionsenglish{\renewcommand{\refname}{Bibliography}}
 \renewcommand{\figureautorefname}{Fig.}
 \usepackage[acronym]{glossaries}
 
@@ -126,6 +129,10 @@
 \sloppy 
 
 % Bibliography system
+\newpage
+\phantomsection
+\addcontentsline{toc}{section}{Bibliography}
+
 \bibliographystyle{ieeetr}
 \bibliography{thesis}
 

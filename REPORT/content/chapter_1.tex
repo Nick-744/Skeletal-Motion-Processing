@@ -13,8 +13,9 @@ controller there is, and ideally it should work out of the box.
 
 This is now within reach thanks to frameworks like Google MediaPipe
 \cite{zhang2020mediapipehands}, which can detect both hands in real time
-from a standard colour camera, outputting 21 three-dimensional landmarks
-per hand at around 30 frames per second on a commodity machine.
+from a standard colour camera, outputting 21 2.5D landmarks per hand ---
+comprising x, y, and relative depth coordinates --- at well under 20 milliseconds
+per frame on modern mobile devices such as the Pixel 3, Samsung S20, and iPhone 11.
 The problem, however, is that these raw landmarks are not directly
 useful for driving a skeleton or analysing motion. Their scale changes with
 how close the hand is to the camera, depth is estimated rather than measured,
@@ -61,17 +62,5 @@ end-to-end latency of \SI{30.68}{\ms} over more than 20\,000 frames.
 
 A Unity prototype (\texttt{my\_hands\_game}) with four scenes that each
 use the skeletal stream differently: a physics-based grapple interaction,
-an editable city environment, a spring-physics face deformer, and a 2-D/3-D
+an editable city environment, a spring-physics face deformer, and a 2D/3D
 painting tool with point-cloud export.
-
-\subsection{Thesis Structure}\label{subsec:structure}
-
-\Cref{sec:background} covers the theoretical background.
-\Cref{sec:stateoftheart} reviews related work.
-\Cref{sec:architecture} describes the overall system design.
-\Cref{sec:tracking} details the hand tracking pipeline.
-\Cref{sec:mano} explains the MANO fitting and IK solving.
-\Cref{sec:unity} covers the Unity integration and the four scenes.
-\Cref{sec:evaluation} presents the latency results.
-\Cref{sec:reconstruction} describes the 3-D surface reconstruction pipeline.
-\Cref{sec:conclusion} concludes with limitations and future directions.
