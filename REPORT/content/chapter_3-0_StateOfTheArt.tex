@@ -1,0 +1,21 @@
+% Chapter 3 - State of the Art
+
+\section{State of the Art}\label{sec:sota}
+
+The previous chapter established the theoretical foundations on which this
+system rests, deriving the specific models and algorithms it employs.
+This chapter takes a wider view: rather than explaining how each component
+works, it surveys the landscape of competing approaches to the problems the
+system solves and positions the present work within it.
+The literature on markerless hand capture, articulated pose estimation, and
+hand-driven interaction is extensive; the discussion is therefore deliberately
+bounded by the setting of this thesis, and prior work is examined only insofar
+as it bears on that setting.
+
+That setting is defined by three constraints first introduced in
+\autoref{subsec:gap} --- monocular RGB input, CPU-only real-time compute, and
+off-the-shelf hardware accessibility --- which together serve as the lenses
+through which all surveyed work is judged.
+Much of the most accurate prior work assumes depth input, GPU-class compute, or
+head-mounted multi-camera hardware; such methods are not dismissed, but they
+are weighed against the adoption cost they would impose on a typical user.
