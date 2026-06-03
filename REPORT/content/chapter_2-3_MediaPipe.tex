@@ -1,0 +1,27 @@
+\subsection{Camera-Based Hand Tracking with MediaPipe}
+\label{subsec:mediapipe}
+
+\subsubsection{Pipeline Architecture}
+MediaPipe Hands \cite{zhang2020mediapipehands} is a two-stage machine learning
+pipeline designed for real-time, on-device hand tracking from a single RGB camera.
+The first stage is a palm detector that operates on the full input image and locates
+palms via an oriented hand bounding box. The second stage is a hand landmark model
+that operates on the cropped hand bounding box provided by the palm detector and
+returns 21 2.5D landmarks per hand, each described by $x$, $y$, and a relative
+depth coordinate defined with respect to the wrist point.
+
+To achieve real-time performance, the pipeline avoids running the palm detector on
+every frame. Instead, once the hand has been located, the bounding box for the
+current frame is derived directly from the landmark predictions of the previous
+frame, so the detector is only reapplied on the first frame or when tracking is
+lost. To determine whether tracking has been lost, the hand landmark model outputs
+an additional scalar representing the confidence that a reasonably aligned hand is
+present in the input crop. When this confidence falls below a predefined threshold,
+the palm detector is triggered again to reinitialise tracking.
+
+\subsubsection{Gesture Recognition}
+Gesture recognition is built on top of the predicted hand skeleton. The state of
+each finger --- for example, whether it is bent or straight --- is determined via
+the accumulated angles of its joints. The resulting set of finger states is then
+mapped to a set of predefined gestures. Beyond static gesture recognition, a
+sequence of landmarks can also be used to predict dynamic gestures.

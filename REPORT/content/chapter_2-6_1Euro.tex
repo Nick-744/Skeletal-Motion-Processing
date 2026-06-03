@@ -1,0 +1,46 @@
+\subsection{Adaptive Signal Smoothing: The \texorpdfstring{1\euro{}}{1-Euro} Filter}
+\label{subsec:one_euro_filter}
+
+Raw tracking signals are inherently noisy, producing \emph{jitter} ---
+rapid, small-amplitude oscillations around the true value that make
+a stationary target appear to vibrate.
+The standard remedy, a low-pass filter, suppresses high-frequency
+noise but introduces \emph{lag}: the filtered output responds
+sluggishly to genuine motion, reducing interactivity.
+Casiez et al.\ \cite{casiez2012oneeuro} frame this as a fundamental
+trade-off: empirical studies show that lag above 50\,ms and jitter
+above 1\,mm mean-to-peak both measurably degrade user performance,
+leaving only a narrow acceptable window for any filter to operate in.
+
+The 1\euro{} filter resolves the trade-off by making the cutoff
+frequency $f_c$ adaptive.
+Rather than applying the same degree of smoothing at all times, it
+scales $f_c$ linearly with the magnitude of the signal's instantaneous
+speed \cite{casiez2012oneeuro}:
+%
+\begin{equation}
+    f_c \;=\; f_{c_{\min}} \;+\; \beta\,\bigl|\dot{\hat{X}}_i\bigr|
+    \label{eq:one_euro}
+\end{equation}
+%
+At low speeds $f_c$ approaches $f_{c_{\min}}$, aggressively
+attenuating jitter.
+As speed increases, $f_c$ rises proportionally, keeping the response
+tight and minimising lag.
+This matches the asymmetry of human perception: people are most
+sensitive to jitter during slow or stationary motion, and most
+sensitive to lag during fast motion \cite{casiez2012oneeuro}.
+
+The filter exposes exactly two parameters.
+$f_{c_{\min}}$ controls slow-speed smoothing: lowering it reduces
+jitter at rest.
+$\beta$ controls high-speed responsiveness: raising it prevents the
+filter from lagging behind fast motion.
+The two are independent and can be tuned sequentially without any
+background in signal processing.
+In a direct comparison against moving-average, exponential-smoothing,
+and Kalman-filter alternatives, the 1\euro{} filter achieves the
+lowest overall error and the least lag across all speed intervals
+\cite{casiez2012oneeuro}, making it well suited to real-time
+landmark smoothing where both artefacts must be minimised
+simultaneously.

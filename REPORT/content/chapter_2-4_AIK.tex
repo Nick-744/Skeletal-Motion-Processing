@@ -1,0 +1,125 @@
+\subsection{Adaptive Inverse Kinematics}\label{subsec:aik}
+
+\subsubsection{Forward vs.\ Inverse Kinematics}
+
+\emph{Forward kinematics} (\acrshort{fk}) maps a joint-configuration vector
+to joint positions: given $\boldsymbol{\theta}$, every joint's world position
+is obtained by composing rigid-body transforms along the kinematic chain.
+\emph{Inverse kinematics} (\acrshort{ik}) poses the dual problem: given target
+positions for a subset of joints, recover the configuration that produces them.
+Classical \acrshort{ik} solvers --- FABRIK, cyclic-coordinate descent,
+Jacobian-based methods --- iterate until convergence, which makes them
+sensitive to initialisation and frame rate.
+
+When every joint position is observed simultaneously, the system is
+\emph{fully observed} and the \acrshort{ik} problem can be solved in closed
+form without iteration. The Adaptive \acrshort{ik} algorithm
+(AIK) exploits this property for the hand skeleton:
+the global root orientation is recovered via a single singular value
+decomposition (\acrshort{svd}), and every subsequent joint rotation follows
+analytically from a swing--twist decomposition along the kinematic chain.
+
+\subsubsection{Global Root Orientation via Point-Set Alignment}
+
+The global orientation of the root joint is the rotation $R_0 \in SO(3)$ that
+best aligns two corresponding sets of vectors --- those derived from the
+template skeleton and those derived from the observed targets.
+Let $\mathbf{A}, \mathbf{B} \in \mathbb{R}^{3 \times N}$ be column-stacked
+matrices of $N$ corresponding vectors in the template and target,
+respectively. The optimal rotation minimises the sum of squared residuals:
+\begin{equation}
+  R_0 \;=\; \arg\min_{R \in SO(3)}
+  \sum_{i=1}^{N} \bigl\|\mathbf{b}_i - R\,\mathbf{a}_i\bigr\|^2.
+\end{equation}
+Following Arun et al.\ \cite{arun1987leastsquares}, the solution is obtained
+from the cross-covariance matrix
+\begin{equation}\label{eq:H}
+  \mathbf{H} \;=\; \mathbf{A}\mathbf{B}^{\top} \;\in\; \mathbb{R}^{3 \times 3},
+\end{equation}
+whose \acrshort{svd} $\mathbf{H} = \mathbf{U}\mathbf{S}\mathbf{V}^{\top}$
+yields
+\begin{equation}\label{eq:R0}
+  R_0 \;=\; \mathbf{V}\mathbf{U}^{\top}.
+\end{equation}
+A proper rotation requires $\det R_0 = +1$. When the input vectors are
+coplanar, the smallest singular value of $\mathbf{S}$ vanishes and
+$\det(\mathbf{V}\mathbf{U}^{\top})$ may equal $-1$ (a reflection). In that
+degenerate case, the sign of the last column of $\mathbf{V}$ is negated before
+recomputing $R_0$, recovering the nearest element of $SO(3)$, as prescribed by
+Arun et al.\ \cite{arun1987leastsquares}.
+
+For the hand skeleton, $\mathbf{A}$ and $\mathbf{B}$ are formed from the five
+vectors pointing from the wrist to each MCP joint in the
+template and in the target, respectively ($N = 5$). Because the metacarpal
+plate is anatomically near-rigid, all five MCP joints are assigned the same
+global rotation $R_0$.
+
+\subsubsection{Per-Joint Rotation via Kinematic Chain Traversal}
+
+For each remaining joint $k$, processed in parent-before-child order through
+the kinematic tree, the local rotation $R_{p,k}$ relative to its parent $p =
+\mathrm{pa}(k)$ is derived as follows. Let $\mathbf{T}_j$ denote the $j$-th
+joint position in the template (rest pose), $\mathbf{q}_j$ the corresponding
+computed world position, and $\mathbf{P}_k$ the observed target position of
+joint $k$.
+
+\textbf{Step~1 --- FK propagation.}
+The parent's world position is updated by applying its global rotation to the
+template bone and translating from the grandparent $p' = \mathrm{pa}(p)$:
+\begin{equation}
+  \mathbf{q}_{p} \;=\;
+  R_{p'}\,\bigl(\mathbf{T}_{p} - \mathbf{T}_{p'}\bigr) + \mathbf{q}_{p'}.
+\end{equation}
+
+\textbf{Step~2 --- local-frame projection.}
+The target is brought into the parent's local coordinate frame:
+\begin{equation}
+  \delta\mathbf{p}_k \;=\; R_{p}^{-1}
+  \bigl(\mathbf{P}_k - \mathbf{q}_{p}\bigr).
+\end{equation}
+
+\textbf{Step~3 --- template bone vector.}
+The rest-pose direction of the bone is
+\begin{equation}
+  \delta\mathbf{t}_k \;=\; \mathbf{T}_k - \mathbf{T}_{p}.
+\end{equation}
+
+\textbf{Step~4 --- swing axis and angle.}
+The swing rotation is the unique rotation in the plane spanned by
+$\delta\mathbf{t}_k$ and $\delta\mathbf{p}_k$ that maps the former onto the
+latter:
+\begin{equation}\label{eq:swing}
+  \hat{\mathbf{n}} \;=\;
+  \frac{\delta\mathbf{t}_k \times \delta\mathbf{p}_k}
+       {\|\delta\mathbf{t}_k \times \delta\mathbf{p}_k\|},
+  \qquad
+  \alpha \;=\; \arccos\!\left(
+    \frac{\delta\mathbf{t}_k \cdot \delta\mathbf{p}_k}
+         {\|\delta\mathbf{t}_k\|\,\|\delta\mathbf{p}_k\|}
+  \right).
+\end{equation}
+
+\textbf{Step~5 --- swing--twist decomposition.}
+Any 3D rotation can be decomposed into a \emph{swing} component (rotation
+perpendicular to a reference axis) and a \emph{twist} component (rotation
+about that axis). Taking the bone direction $\delta\mathbf{t}_k$ as the twist
+axis, the local rotation is
+\begin{equation}\label{eq:local_rot}
+  R_{p,k} \;=\;
+  D_{\mathrm{sw}}(\hat{\mathbf{n}},\,\alpha)
+  \cdot
+  D_{\mathrm{tw}}(\delta\mathbf{t}_k,\,\varphi_k),
+  \qquad
+  R_k \;=\; R_{p} \cdot R_{p,k},
+\end{equation}
+where $D_{\mathrm{sw}}$ and $D_{\mathrm{tw}}$ are axis-angle rotation matrices.
+The AIK algorithm sets $\varphi_k = 0$ for all joints, so
+$D_{\mathrm{tw}} = \mathbf{I}$ and the local rotation reduces to the swing
+alone. This is the central theoretical simplification: axial spin about a
+finger bone is physiologically negligible, and omitting it removes the
+directional ambiguity of the cross product when the template and target bones
+are nearly collinear.
+
+The traversal yields, for every joint in the tree, a local rotation matrix
+$R_{p,k}$ relative to its parent and an absolute rotation matrix $R_k$ in
+world space, together constituting a complete pose of the skeleton.

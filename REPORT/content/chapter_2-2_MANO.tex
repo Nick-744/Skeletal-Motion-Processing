@@ -1,0 +1,111 @@
+\subsection{The MANO Hand Model}\label{subsec:mano}
+
+\acrshort{mano} (hand \textbf{M}odel with \textbf{A}rticulated and \textbf{N}on-rigid
+def\textbf{O}rmations) is a statistical, learned model of the human hand
+introduced by Romero et al. \cite{MANO:SIGGRAPHASIA:2017}.
+It is trained from around 1{,}000 high-resolution 3D scans of 31 subjects
+captured across a wide variety of hand poses, totalling 2{,}018 scans of
+which 1{,}554 registrations were deemed successful.
+Like the SMPL body model \cite{SMPL:2015} on which it is built, \acrshort{mano}
+factors geometric changes into those due to the identity of the subject and
+those caused by pose.
+The resulting model is realistic, low-dimensional, compatible with standard
+graphics packages, and capable of representing any human hand.
+
+\subsubsection{Model Formulation}
+
+\acrshort{mano} is based on the SMPL formulation, presented here for completeness
+following \cite{SMPL:2015}.
+A Linear Blend Skinning (LBS) function $W$ is applied to an articulated
+rigged mesh:
+\begin{equation}\label{eq:mano_full}
+  M(\vec{\boldsymbol{\beta}},\,\vec{\boldsymbol{\theta}})
+  = W\!\left(
+      T_P(\vec{\boldsymbol{\beta}},\vec{\boldsymbol{\theta}}),\;
+      J(\vec{\boldsymbol{\beta}}),\;
+      \vec{\boldsymbol{\theta}},\;
+      \mathcal{W}
+    \right),
+\end{equation}
+where $\vec{\boldsymbol{\beta}}$ are the shape parameters,
+$\vec{\boldsymbol{\theta}}$ are the pose parameters,
+$J(\vec{\boldsymbol{\beta}})$ are the joint locations defining the kinematic
+tree, and $\mathcal{W}$ are the blend weights.
+The posed mesh shape $T_P$ is defined as
+\begin{equation}\label{eq:mano_tp}
+  T_P(\vec{\boldsymbol{\beta}},\,\vec{\boldsymbol{\theta}})
+  = \bar{T} + B_S(\vec{\boldsymbol{\beta}}) + B_P(\vec{\boldsymbol{\theta}}),
+\end{equation}
+where $\bar{T}$ is the mean template shape, $B_S(\vec{\boldsymbol{\beta}})$
+are the shape blend shapes encoding identity variation, and
+$B_P(\vec{\boldsymbol{\theta}})$ are the pose blend shapes capturing
+pose-dependent mesh deformations.
+
+The pose and shape blend shapes are each defined as a linear combination
+of vertex offsets:
+\begin{align}
+  B_P(\vec{\boldsymbol{\theta}};\,\mathcal{P})
+  &= \sum_{n=1}^{9K}
+     \Bigl(R_n(\vec{\boldsymbol{\theta}}) - R_n(\vec{\boldsymbol{\theta}}^*)\Bigr)
+     \mathbf{P}_n,
+  \label{eq:mano_bp}\\[4pt]
+  B_S(\vec{\boldsymbol{\beta}};\,\mathcal{S})
+  &= \sum_{n=1}^{|\vec{\boldsymbol{\beta}}|}
+     \beta_n\,\mathbf{S}_n,
+  \label{eq:mano_bs}
+\end{align}
+where $\mathbf{P}_n \in \mathcal{P}$ are the pose blend shapes, $K$ is the
+number of parts in the hand model, $R_n(\vec{\boldsymbol{\theta}})$ indexes
+the $n$\textsuperscript{th} element of the concatenated rotation matrix
+elements, $\vec{\boldsymbol{\theta}}^*$ is the zero pose, $\beta_n$ are
+linear shape coefficients, and $\mathbf{S}_n \in \mathcal{S}$ are the
+principal components of the learned shape basis.
+The joint locations $J(\vec{\boldsymbol{\beta}})$ also depend on shape and
+are learned as a sparse linear regression from mesh vertices, as in SMPL.
+
+Traditional LBS models are overly smooth and suffer from collapse at the
+joints. \acrshort{mano} addresses this by learning corrective pose blend shapes that
+correct these artifacts, resulting in more natural-looking finger bending.
+
+% \subsubsection{Shape Space}
+
+% The shape blend shapes $B_S$ are computed from a set of registered hand
+% shapes normalised to the zero pose using Principal Component Analysis
+% (PCA). The coefficients $\beta_n$ are linear and the basis vectors
+% $\mathbf{S}_n$ are the resulting principal components of a low-dimensional
+% shape space learned from the training data.
+
+% \subsubsection{Pose Space and Low-Dimensional Embedding}
+
+% MANO contains 15 joints plus the global orientation.
+% Although many hand articulations are anatomically restricted to a single
+% degree of freedom, the model treats all joints as ball joints for simplicity,
+% making the full pose space effectively over-parameterised.
+
+% To improve robustness when fitting to noisy full-body scan data and to
+% reduce computational cost, the pose space is further reduced via a linear
+% PCA embedding computed from the training poses in axis-angle representation
+% (mapping all axis angles to the range $(-\pi, \pi]$).
+% According to Romero et al. \cite{MANO:SIGGRAPHASIA:2017},
+% 6 components per hand suffice to capture approximately 81\% of the variance
+% in the training poses, while 10 and 15 components account for 90\% and 95\%,
+% respectively.
+
+% \subsubsection{Locality Regularisation of Pose Blend Shapes}
+
+% A key departure from SMPL is the introduction of a geodesic-distance-based
+% regularisation that encourages the pose-dependent blend shapes to be local
+% to the joints that influence them.
+% The constant regularisation weight $\lambda_P$ used in SMPL is replaced by
+% a weight that depends on the geodesic distance between the input joint and
+% the output vertex:
+% \begin{equation}\label{eq:mano_lambda}
+%   \Lambda_P(i,\,j)
+%   = \mathcal{J}_j\,D_{\mathrm{geo}}(t_i,\,\bar{\mathbf{T}}),
+% \end{equation}
+% where $D_{\mathrm{geo}} \in \mathbb{R}^N$ is the geodesic distance between
+% vertex $t_i$ and the rest of the template mesh $\bar{\mathbf{T}}$, and
+% $\mathcal{J}_j \in \mathbb{R}^N$ denotes the joint regressor for joint $j$.
+% This penalises the dependency of vertex displacements on joints whose
+% rotation centres are far away, resulting in more local and regularised
+% pose-dependent deformations.

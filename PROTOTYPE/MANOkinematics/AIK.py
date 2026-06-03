@@ -125,7 +125,7 @@ def adaptive_IK(T_: np.ndarray, P_: np.ndarray) -> np.ndarray:
         # Calculate the spatial 3D position of the parent joint
         # by applying the parent's global rotation to the template bone,
         # and adding it to the grandparent's position.
-        q[pa] = np.matmul(R[pa], (T[pa] - T[pa_pa])) + q[pa_pa]
+        q[pa] = np.matmul(R[pa_pa], (T[pa] - T[pa_pa])) + q[pa_pa]
 
         # Calculate the vector from the computed parent to the target joint, 
         # and transform it back into the parent's local coordinate space.

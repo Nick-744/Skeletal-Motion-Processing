@@ -1,0 +1,65 @@
+% Chapter 2 - Theoretical Background
+
+\section{Theoretical Background}\label{sec:theory}
+
+This chapter presents the scientific and technical foundations upon which the system rests.
+The topics are introduced in pipeline order: from the anatomy of the human hand and its
+skeletal parameterisation, through the models and algorithms that transform raw webcam
+output into normalised joint-angle data, to the communication and rendering layers
+that close the loop in real time.
+The final section addresses the \acrshort{ai}-assisted surface reconstruction step that
+converts user-painted point clouds into meshes.
+
+\subsection{Anatomy of the Human Hand and Skeletal Modelling}\label{subsec:anatomy}
+
+The human hand contains 27 bones grouped into three regions.
+The eight \emph{carpal} bones form the wrist foundation.
+The five \emph{metacarpal} bones span the palm, each articulating proximally with
+a carpal and distally with a finger.
+The 14 \emph{phalanges} are distributed as two in the thumb (proximal and distal)
+and three in each of the remaining four fingers (proximal, middle, distal).
+Motion is produced at 21 functional joints, each characterised by a specific
+number of degrees of freedom (\acrshort{dof}).
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.5\linewidth, frame]{img/Scheme_human_hand_bones-en.png}
+	\caption{Bones of the human hand}
+	\label{fig:hand}
+\end{figure}
+
+For computational purposes, the hand is represented as a \emph{kinematic chain}:
+a rooted tree of rigid segments (bones) connected at rotational joints.
+Each joint $k$ has a designated parent joint $\mathrm{pa}(k)$, and its global
+position in world space is obtained by composing all ancestor transforms along
+the chain from the root (wrist) outward to the fingertips.
+This parent--child hierarchy is the data structure underlying both MediaPipe's
+21-landmark skeleton and the MANO parametric model's 16-joint armature.
+
+Two complementary numbering conventions are relevant to this thesis.
+Google MediaPipe assigns indices 0--20 to landmarks as follows: index 0 is the wrist,
+indices 1--4 are the thumb (CMC, MCP, IP, TIP), indices 5--8 the index finger
+(MCP, PIP, DIP, TIP), and so forth through to the little finger (indices 17--20).
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/MediaPipe-hand-model-Joint-annotation.png}
+	\caption{MediaPipe hand model joint annotation. Adapted from Veluri et al. \cite{Veluri2022}.}
+	\label{fig:mediapipe-joints}
+\end{figure}
+
+The MANO model, described in \autoref{subsec:mano}, uses a different 16-joint
+convention in which each finger contributes three internal joints
+(MCP, PIP, DIP) plus a fingertip keypoint extended from a specific mesh vertex.
+Bridging these two representations is the central kinematic problem
+addressed by the Adaptive Inverse Kinematics solver in \autoref{subsec:aik}.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.7\linewidth, frame]{img/MANO-hand-model-Joint-annotation.png}
+	\caption{MANO hand model and index point labeling. Adapted from Ning et al. \cite{Ning2025}.}
+	\label{fig:mano-joints}
+\end{figure}

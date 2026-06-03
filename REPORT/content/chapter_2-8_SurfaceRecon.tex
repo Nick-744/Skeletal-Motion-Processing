@@ -1,0 +1,67 @@
+\subsection{Surface Reconstruction from Point Clouds}\label{subsec:nksr}
+
+Surface reconstruction addresses the inverse problem of recovering a
+continuous, connected 3D surface from a discrete, unstructured set of
+points sampled from that surface.
+In practical settings such point clouds are often sparse, non-uniformly
+sampled, and corrupted by noise, containing no connectivity information
+and no guarantee of watertightness.
+Converting such observations into a renderable or printable mesh is a
+well-studied problem in geometry processing, and one where recent
+learning-based methods have demonstrated substantial advantages over
+classical approaches.
+
+\subsubsection{Classical Baseline: Poisson Surface Reconstruction}
+
+Poisson Surface Reconstruction (PSR) \cite{kazhdan2006poisson} frames
+mesh generation as a global Poisson equation.
+Given a point cloud augmented with per-point inward-facing normals
+(estimated, e.g., via \acrshort{pca} over a local $k$-nearest-neighbour
+neighbourhood), PSR solves for an implicit indicator function $\chi$
+whose gradient best matches the input normals.
+A mesh is then extracted at an isovalue γ chosen as the mean of χ
+evaluated at the input sample positions.
+The method produces smooth, globally consistent surfaces and is well
+understood, but it is sensitive to normal estimation quality and
+requires a globally consistent orientation of input normals.
+
+\subsubsection{Neural Kernel Surface Reconstruction (NKSR)}
+
+NKSR \cite{huang2023nksr} is a learning-based method that replaces the
+classical \acrshort{pde} solve with a learned neural prior, building on
+the Neural Kernel Fields (NKF) framework while addressing its two main
+limitations: inability to scale beyond approximately ten thousand input
+points, and poor robustness to noise.
+
+Like PSR, NKSR requires an \emph{oriented} point cloud as input, meaning
+per-point surface normals must be provided or estimated beforehand.
+The reconstructed surface is encoded as the zero level set of a
+\emph{Neural Kernel Field} --- an implicit function expressed as a
+weighted sum of learned, positive-definite kernel basis functions
+conditioned on the input and centered on voxels in a predicted sparse
+hierarchy.
+A sparse convolutional backbone processes the input and predicts a
+multi-scale voxel hierarchy in which each voxel carries a feature vector
+and a predicted normal.
+These define a set of compactly supported kernel basis functions whose
+scalar coefficients are found by solving a sparse, positive-definite
+linear system.
+The system minimises a loss that simultaneously encourages (i) the
+field value to vanish at all input points, and (ii) the field's gradient
+to agree with the predicted normals at voxel centres near the surface.
+The second term --- absent in the original NKF --- is what confers
+robustness to noise: rather than interpolating exact positional
+constraints, the model fits a smooth gradient field, making it
+significantly less sensitive to measurement errors.
+Compact kernel support enables the use of memory-efficient sparse linear
+solvers, allowing NKSR to reconstruct millions of points in seconds.
+The final mesh is extracted via dual Marching Cubes, and an optional
+learned masking branch discards spurious geometry at coarse hierarchy
+levels far from the surface.
+
+NKSR is trained directly from dense oriented point clouds and requires
+neither watertight meshes nor pre-computed occupancy labels as
+supervision, making it applicable to a wide variety of acquisition
+settings.
+The result is a high-quality mesh that accurately reflects the overall
+shape suggested by the input, even under sparse or noisy conditions.

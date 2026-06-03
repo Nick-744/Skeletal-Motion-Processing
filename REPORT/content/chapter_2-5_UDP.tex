@@ -1,0 +1,51 @@
+\subsection{Real-Time Inter-Process Communication via UDP}\label{subsec:udp}
+
+A real-time hand-tracking system that feeds a separate rendering
+engine requires an inter-process communication mechanism capable of
+sustaining a continuous, low-latency data stream.
+This section discusses the choice of transport protocol for that link and
+the use of a structured serialisation format.
+
+\subsubsection{UDP vs.\ TCP for Real-Time Streaming}
+
+The two dominant transport-layer protocols for socket communication
+are the Transmission Control Protocol (\acrshort{tcp}) and the User
+Datagram Protocol (\acrshort{udp}).
+
+\acrshort{tcp} guarantees ordered, reliable delivery by
+retransmitting any packet that is lost in transit.
+In a continuous pose stream, however, this guarantee becomes
+a liability: a retransmitted packet arrives late and carries data
+that describes a hand position that has already changed.
+Waiting for stale data introduces latency without adding information,
+which is worse than simply skipping a frame.
+
+\acrshort{udp} is connectionless and offers no delivery guarantees.
+Each datagram is sent once and either arrives or is silently
+discarded; the protocol never stalls to recover a lost packet.
+The receiver always acts on the most recently arrived datagram,
+so the worst consequence of packet loss is a single skipped frame
+rather than a latency spike.
+For applications where timeliness is more important than completeness
+--- such as live pose streaming --- \acrshort{udp} is therefore the
+appropriate choice.
+
+\subsubsection{Structured Serialisation with JSON}
+
+Each datagram must carry several heterogeneous values simultaneously:
+joint rotation data for both hands, a scalar gesture label, and a
+3-D anchor position.
+Packing these into a single message requires a serialisation format
+that is both compact enough for real-time use and flexible enough to
+accommodate optional fields (e.g.\ when only one hand is visible).
+
+\acrshort{json} satisfies both requirements.
+It represents structured data as human-readable key-value pairs,
+supports optional and nullable fields natively, and is natively
+supported by virtually every programming language and environment.
+Its text-based nature does carry a modest size overhead compared to
+binary formats, but for the data volumes involved in a per-frame pose
+message this overhead is negligible.
+A datagram is only transmitted when at least one hand has been
+detected, keeping the channel idle during frames with no visible
+hands.

@@ -28,10 +28,10 @@ To actually drive a hand avatar or store motion data in a meaningful way,
 you need a \emph{canonical} representation: something that describes the
 hand as a set of joint rotations along a fixed kinematic tree, independent
 of hand size or camera distance. The MANO parametric hand model
-\cite{romero2017embodiedhands} is exactly this. It represents hand pose
+\cite{MANO:SIGGRAPHASIA:2017} is exactly this. It represents hand pose
 as 15 joint rotations plus a global orientation, in a predefined parent-child
 kinematic tree whose parameters (blend shapes, skinning weights, joint regressor)
-were learned from real hand scans. A pose in MANO space can drive a 3-D mesh,
+were learned from real hand scans. A pose in MANO space can drive a 3D mesh,
 be logged, compared across sessions, or passed to a classifier without
 any additional preprocessing.
 
@@ -45,14 +45,14 @@ application.
 The work presented here covers the full pipeline from webcam input to
 a running Unity application. Specifically:
 
-A hand tracking and 3-D coordinate module (\texttt{hand\_engine},
+A hand tracking and 3D coordinate module (\texttt{hand\_engine},
 \texttt{hand\_kinematics\_3D}) retrieves metric landmarks from MediaPipe
 and filters them using the 1\euro{} filter \cite{casiez2012oneeuro} to remove
 jitter while keeping latency low.
 
 An Adaptive \acrshort{ik} solver (\texttt{MANOkinematics}) maps the 21
 MediaPipe landmarks onto MANO's 16-joint skeleton using the AIK algorithm
-\cite{zhou2020monocular}, producing axis-angle joint rotations that are invariant
+\cite{zhou2020monocular} \cite{meng2021aik}, producing axis-angle joint rotations that are invariant
 to hand scale and camera distance.
 
 A UDP streaming layer (\texttt{mano\_unity\_streamer},

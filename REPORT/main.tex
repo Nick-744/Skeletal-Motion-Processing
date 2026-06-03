@@ -1,4 +1,4 @@
-% !TEX TS-program = xelatex
+% !TeX program = xelatex
 \documentclass[11pt]{article}
 
 % Language setting
@@ -10,6 +10,7 @@
 
 % Useful packages
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage[]{graphicx} % use draft option to reduce compile times
 \usepackage[export]{adjustbox}
 \usepackage[hidelinks, breaklinks]{hyperref}
@@ -83,10 +84,25 @@
 \newacronym{hci}{HCI}{Human-Computer Interaction}
 \newacronym{cpu}{CPU}{Central Processing Unit}
 \newacronym{vr}{VR}{Virtual Reality}
+\newacronym{ar}{AR}{Augmented Reality}
 \newacronym{fbx}{FBX}{Filmbox}
 \newacronym{udp}{UDP}{User Datagram Protocol}
+\newacronym{tcp}{TCP}{Transmission Control Protocol}
 \newacronym{ik}{IK}{Inverse Kinematics}
+\newacronym{fk}{FK}{Forward Kinematics}
+\newacronym{aik}{AIK}{Adaptive Inverse Kinematics}
 \newacronym{pca}{PCA}{Principal Component Analysis}
+\newacronym{svd}{SVD}{Singular Value Decomposition}
+\newacronym{dof}{DoF}{Degrees of Freedom}
+\newacronym{mano}{MANO}{hand Model with Articulated and Non-rigid defOrmations}
+\newacronym{lbs}{LBS}{Linear Blend Skinning}
+\newacronym{json}{JSON}{JavaScript Object Notation}
+\newacronym{ai}{AI}{Artificial Intelligence}
+\newacronym{pde}{PDE}{Partial Differential Equation}
+\newacronym{psr}{PSR}{Poisson Surface Reconstruction}
+\newacronym{nksr}{NKSR}{Neural Kernel Surface Reconstruction}
+\newacronym{gpu}{GPU}{Graphics Processing Unit}
+\newacronym{api}{API}{Application Programming Interface}
 
 
 
@@ -118,10 +134,23 @@
 
 \setglossarystyle{index}
 \printglossary[type=\acronymtype,nonumberlist]
-\newpage
 
+\newpage
 \input{content/chapter_1}
 
+\newpage
+\input{content/chapter_2-1_HumanHand}
+\newpage
+\input{content/chapter_2-2_MANO}
+\input{content/chapter_2-3_MediaPipe}
+\newpage
+\input{content/chapter_2-4_AIK}
+\input{content/chapter_2-5_UDP.tex}
+\newpage
+\input{content/chapter_2-6_1Euro.tex}
+\newpage
+\input{content/chapter_2-7_Unity.tex}
+\input{content/chapter_2-8_SurfaceRecon.tex}
 
 
 
