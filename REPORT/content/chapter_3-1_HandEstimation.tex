@@ -125,16 +125,6 @@ timing or hardware requirements.
 
 \subsubsection{Real-Time Tracking on Accessible Hardware}\label{subsubsec:sota_hardware}
 
-The intersection of parametric, rotation-based hand output and CPU-only real-time
-performance is a largely unoccupied position in the literature.
-Among the methods discussed above that produce \acrshort{mano}-compatible joint
-rotations, all reported or evaluable inference times correspond to dedicated GPU
-hardware: Zhou et al.\ report timings on an NVIDIA GTX\,1080\,Ti, while
-Park et al.\ and Pavlakos et al.\ do not report inference timing at all.
-No published method that regresses joint rotations in the \acrshort{mano}
-parametric representation has demonstrated interactive-rate performance on a
-standard CPU-only platform.
-
 Efforts to reduce the computational footprint of hand mesh reconstruction have
 produced systems that do achieve interactive rates on mobile hardware.
 Chen et al.\ \cite{chen2022mobrecon} presented MobRecon, which runs at 83\,fps
@@ -151,9 +141,8 @@ produce joint rotations in a kinematic hierarchy and therefore cannot directly
 drive a rigged skeletal avatar without a separate pose-extraction step.
 
 MediaPipe Hands \cite{zhang2020mediapipehands} achieves real-time landmark
-tracking on commodity CPU hardware, but as discussed above its output consists
-of joint coordinates in camera space with wrist-relative depth, encoding no
-joint rotations or kinematic hierarchy.
+tracking on commodity CPU hardware. However, as detailed in \ref{subsubsec:model-free},
+its raw coordinate output lacks the canonical kinematic hierarchy.
 
 The system developed in this thesis addresses this gap directly.
 Rather than running a learned model-based regressor at CPU speed---a direction
