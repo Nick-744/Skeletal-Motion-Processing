@@ -1,153 +1,164 @@
 \subsection{Monocular Hand Pose and Shape Estimation}\label{subsec:sota_estimation}
 
-Hand pose estimation from imagery is the core field this system inhabits.
-The task is to recover, from pixel observations, a 3D description of hand
-configuration --- joint positions, rotations, or a full parametric model ---
-sufficient for gesture recognition, avatar animation, or motion logging.
-Approaches differ principally in input modality, whether or not they commit
-to a parametric model, and the compute required at inference time.
+\subsubsection{Model-Free Keypoint Estimation}\label{subsubsec:model-free}
 
-\subsubsection{Problem Formulation and Input Modalities}\label{subsubsec:sota_modalities}
+Model-free methods approach monocular hand tracking by training a network to
+regress joint coordinates directly from the input image, without fitting
+a parametric model at inference time.
+Their principal attraction is computational efficiency: the output space is
+compact and inference is fast, enabling real-time performance on commodity
+mobile devices using a standard RGB camera and requiring no specialised
+depth-sensing hardware~\cite{zhang2020mediapipehands}.
 
-Recovering 3D hand pose from 2D images is fundamentally ill-posed:
-perspective projection discards depth, making the same image consistent with
-infinitely many 3D configurations \cite{Panteleris2017UsingAS}.
-The literature addresses this through three families of input, each resolving
-the ambiguity differently.
+Spurr et al.~\cite{spurr2020weakly} proposed a weakly supervised approach to
+3D hand pose estimation that incorporates biomechanical constraints---including
+bone length constraints, a palm-structure term penalising invalid curvature and
+inter-bone angles among the metacarpal root bones,
+and anatomical joint angle limits encoding the valid range
+of flexion and abduction---directly into the training objective as
+differentiable soft losses.
+Rather than fitting a kinematic or parametric model to the predictions, the
+method extracts the relevant biomechanical quantities directly from the
+predicted 3D joint positions in order to constrain them during training.
+This allows the network to leverage images annotated only with 2D keypoints as
+a supplementary supervisory signal, reducing reliance on per-frame 3D
+ground-truth annotations and improving generalisation to real images.
+The method additionally estimates the absolute depth of the root joint,
+$Z_\mathrm{root}$, from the underlying 2.5D representation, further stabilised
+by a dedicated refinement network.
+As with MediaPipe, the output is a set of 3D joint coordinates
+$\mathbf{J}^{3D} \in \mathbb{R}^{21\times3}$: no parametric shape model is
+fitted and no mesh is produced.
 
-\emph{RGB-D} methods augment the colour frame with a registered depth map
-from a structured-light or time-of-flight sensor, making the 3D position of
-each observed surface point directly measurable and reducing pose estimation
-to a fitting problem \cite{Panteleris2017UsingAS}.
-High accuracy is achievable without learned depth priors, but at the cost of
-a dedicated sensor.
+The common limitation of both approaches is that their output consists solely
+of joint positions in camera space.
+In MediaPipe, depth is expressed relative to the wrist and does not constitute
+an absolute metric measurement~\cite{zhang2020mediapipehands}.
+Neither method encodes explicit joint rotations or kinematic hierarchy in its
+output representation.
+This coordinate output is sufficient to drive gesture classifiers---MediaPipe
+demonstrates this directly by determining the state of each finger via
+accumulated joint angles and mapping the resulting finger states to predefined
+gesture categories~\cite{zhang2020mediapipehands}---but it cannot directly
+animate a rigged skeletal avatar or generate motion logs in a canonical,
+scale-invariant representation, a gap that the present work addresses.
 
-\emph{Multi-view RGB} resolves depth geometrically by triangulating
-corresponding keypoints across two or more calibrated cameras.
-Such rigs have been used to generate large-scale weakly-supervised training
-annotations \cite{simon2017hand}, but the
-synchronised, calibrated setup they require is unavailable to a general user.
 
-\emph{Monocular RGB} is the most constrained setting: a single camera,
-no depth channel, all 3D structure inferred from
-appearance or temporal cues \cite{Panteleris2017UsingAS}.
-Depth is ambiguous, self-occlusion is unavoidable, and scale varies with
-camera distance.
-This thesis adopts this modality because it imposes no hardware requirement
-beyond the webcam a user already owns.
 
-\subsubsection{Model-Free Keypoint Estimation}\label{subsubsec:sota_keypoint}
+\subsubsection{Model-Based Regression}\label{subsubsec:model-based}
 
-\emph{Model-free} detectors localise hand landmarks directly in image space
-without fitting a parametric model at inference time, outputting a flat set
-of 2D or 2.5D coordinates per hand.
-Simon et al.\ \cite{simon2017hand} addressed the chronic scarcity of
-annotated in-the-wild hand data---observing that no markerless hand
-keypoint detectors for RGB images then existed---through \emph{multi-view
-bootstrapping}: an initial detector is applied independently to every view
-of a calibrated multi-camera rig, correct detections are robustly
-triangulated in 3D and erroneous ones filtered as outliers, and the
-reprojected triangulations serve as new labeled training data with which
-an improved detector is iteratively retrained \cite{simon2017hand}.
-A manual verification pass over the highest-scored frames is included,
-though the authors note it typically requires only one to two minutes and
-can largely be replaced by automatic heuristic filtering
-\cite{simon2017hand}.
-The resulting hand keypoint detector forms the hand-detection component
-of OpenPose \cite{cao2021openpose}, and its 21-landmark topology is
-adopted directly by MediaPipe Hands \cite{zhang2020mediapipehands}.
-MediaPipe Hands, described in \autoref{subsec:mediapipe}, belongs to
-this family.
+A second family of methods produces anatomically grounded output by grounding
+network predictions in the MANO parametric hand model.
+Given pose coefficients $\boldsymbol{\theta}$ and shape coefficients
+$\boldsymbol{\beta}$, the full 3D mesh follows analytically from the MANO forward
+pass, yielding output that is anatomically valid by construction, invariant to
+hand size, and directly compatible with graphics and motion-analysis pipelines.
+Methods in this family differ in how they arrive at these parameters: some regress
+them directly from image features, while others derive them indirectly via
+predicted 3D joint positions.
 
-The limitation shared across this family is that the output is a flat list
-of image-space coordinates: no joint hierarchy, no canonical scale, no
-rotation representation, and depth estimated only relative to the wrist
-\cite{zhang2020mediapipehands}.
-No downstream application requiring a skeletal pose or reusable motion
-data can consume this output directly --- it is the representational gap
-identified in \autoref{subsec:gap} that this thesis bridges.
+Zhou et al.\ \cite{zhou2020monocular} presented a method for real-time monocular
+hand shape and motion capture that runs at over 100\,fps, following the indirect
+route.
+The system comprises two learned modules.
+A joint detection network, DetNet, built on a ResNet-50 backbone, regresses
+root-relative, scale-normalised 3D joint positions from the input image under a
+multi-task scheme that simultaneously exploits 2D-annotated real images and
+3D-annotated synthetic data.
+A subsequent inverse kinematics network, IKNet, then solves the inverse kinematics
+problem in a single feed-forward pass through a seven-layer fully-connected
+network trained on motion-capture data, converting the predicted joint positions
+into per-joint rotations expressed as unit quaternions.
+These rotations drive the MANO model directly, while shape parameters
+$\boldsymbol{\beta}$ are estimated separately by minimising the discrepancy
+between MANO bone lengths and the bone lengths derived from the 3D joint
+predictions.
+On an NVIDIA GTX\,1080\,Ti, DetNet requires 8.9\,ms and IKNet 0.9\,ms per
+frame, yielding a combined throughput exceeding 100\,fps.
 
-\subsubsection{Model-Based Estimation: Direct MANO Regression}\label{subsubsec:sota_mano}
+Park et al.\ \cite{park2022handoccnet} presented HandOccNet, addressing the
+robustness challenge of partial occlusion within the direct model-based regression
+framework.
+The backbone separates image features into primary features and secondary features
+using a learned necessity map, where primary features correspond to
+high-importance, hand-relevant regions and secondary features correspond to
+low-importance regions associated with occlusion.
+Two successive Transformer-based modules then operate on these features: the
+Feature Injecting Transformer (FIT) injects information from the primary features
+into the locations of the secondary features by treating the secondary features as
+queries and the primary features as key--value pairs, while the Self-Enhancing
+Transformer (SET) subsequently refines the result via self-attention.
+The enriched feature map is passed to a regressor that predicts MANO pose
+parameters $\boldsymbol{\theta} \in \mathbb{R}^{48}$ and shape parameters
+$\boldsymbol{\beta} \in \mathbb{R}^{10}$ directly, from which the final 3D hand
+mesh is obtained via the MANO layer.
+HandOccNet was shown to outperform all prior works on the HO-3D and FPHA
+hand-object interaction benchmarks.
 
-A second family closes this gap by predicting the parameters of a parametric
-hand model directly from image features, bypassing the landmark stage.
-Given its canonical status as a learned deformable hand prior
-\cite{MANO:SIGGRAPHASIA:2017}, MANO is the output space adopted by most
-modern regressors.
+Pavlakos et al.\ \cite{pavlakos2024hamer} presented HaMeR (Hand Mesh Recovery),
+a fully transformer-based approach using a large-scale Vision Transformer (ViT-H)
+backbone followed by a transformer decoder head that regresses MANO pose and
+shape parameters directly from a monocular RGB image.
+The model is trained on 2.7\,M annotated examples consolidated from ten
+datasets providing either 2D or 3D hand annotations; the authors note that the
+majority of these examples are collected in controlled studio or multi-camera
+environments, with only 5\% drawn from in-the-wild sources.
+HaMeR achieves state-of-the-art accuracy across most metrics on the FreiHAND and
+HO-3D benchmarks and, when evaluated on the authors' in-the-wild HInt benchmark,
+yields 2--3$\times$ improvements in PCK@0.05 over prior methods, with the ablation
+study demonstrating that both the increased data scale and the high-capacity
+architecture independently contribute to this gain.
 
-Boukhayma et al.\ \cite{boukhayma2019hand} presented the first end-to-end
-deep learning method that predicts both 3D hand shape and pose from a single
-unconstrained RGB image. A ResNet-50 encoder regresses MANO shape and pose
-parameters; the decoder is a fixed, pre-computed MANO mesh generator coupled
-with a weak-perspective reprojection module. The pipeline is trained end-to-end
-with a combination of 3D joint supervision on controlled datasets and 2D joint
-supervision on in-the-wild images, without requiring camera intrinsics at any
-stage, achieving state-of-the-art 3D pose accuracy at the time of publication.
+The shared representational commitment across all three systems is the use of MANO
+as the output representation, which enforces anatomical validity and enables direct
+compatibility with downstream graphics pipelines.
+The systems differ, however, in how MANO parameters are obtained: Zhou et al.\
+follow an indirect route in which the backbone first predicts 3D joint positions
+that are subsequently converted to rotations and shape parameters via IKNet and a
+bone-length optimisation; HandOccNet and HaMeR instead regress MANO parameters
+directly from image features in a single feed-forward pass.
+Zhou et al.\ explicitly report their system achieving over 100\,fps on a dedicated
+GPU; the papers of Park et al.\ and Pavlakos et al.\ do not report inference
+timing or hardware requirements.
 
-Hasson et al.\ \cite{hasson2019obman} extended the paradigm to joint
-hand--object reconstruction by integrating MANO as a differentiable network
-layer and simultaneously estimating object geometry with an AtlasNet decoder.
-A novel contact loss---combining an attraction term that encourages hand-surface
-contact with the object and a repulsion term that penalises
-interpenetration---enforces physically plausible hand--object configurations
-and improves grasp quality metrics over a baseline trained without contact
-supervision.
 
-FrankMocap \cite{rong2021frankmocap} incorporated a hand estimation module
-into a whole-body system through a modular design in which independent
-regression networks for the face, hands, and body are run separately and their
-outputs are subsequently composed by an integration module. The hand module is
-built on the hand component of the SMPL-X parametric model, uses a ResNet-50
-encoder, and includes motion-blur data augmentation to improve robustness to the
-blur artefacts common in full-body capture scenarios.
 
-More recently, HaMeR \cite{pavlakos2024hamer} adopted a fully
-transformer-based architecture pairing a large-scale Vision Transformer (ViT-H)
-backbone with a transformer decoder that regresses MANO pose, shape, and camera
-parameters. Trained on 2.7\,M examples consolidated from ten datasets containing
-2D or 3D hand annotations, HaMeR consistently outperforms prior work on the
-controlled FreiHAND and HO3D benchmarks and, by substantially larger margins, on
-the authors' in-the-wild HInt benchmark. All methods in this family are evaluated
-on GPU hardware in their respective publications.
+\subsubsection{Real-Time Tracking on Accessible Hardware}\label{subsubsec:sota_hardware}
 
-The closest predecessor to the approach developed in this thesis is the system of
-Zhou et al.\ \cite{zhou2020monocular}. It decomposes hand pose estimation into
-two learned modules: \textit{DetNet}, a multi-task convolutional network with a
-ResNet-50 backbone that predicts 2D and 3D joint positions from a single RGB
-image by combining 2D-annotated in-the-wild data with 3D-annotated synthetic
-data; and \textit{IKNet}, a seven-layer fully-connected neural network that maps
-those 3D joint predictions to per-joint quaternion rotations in a single
-feed-forward pass, enabling direct MANO mesh animation without iterative
-optimisation. IKNet is trained jointly on motion-capture data from the MANO
-dataset and on noisy 3D predictions produced by DetNet, so that it learns a
-hand-pose prior while remaining robust to detection errors. Running on an NVIDIA
-GTX\,1080\,Ti, the combined system achieves over 100\,fps, with DetNet
-accounting for 8.9\,ms and IKNet for 0.9\,ms per frame.
+The intersection of parametric, rotation-based hand output and CPU-only real-time
+performance is a largely unoccupied position in the literature.
+Among the methods discussed above that produce \acrshort{mano}-compatible joint
+rotations, all reported or evaluable inference times correspond to dedicated GPU
+hardware: Zhou et al.\ report timings on an NVIDIA GTX\,1080\,Ti, while
+Park et al.\ and Pavlakos et al.\ do not report inference timing at all.
+No published method that regresses joint rotations in the \acrshort{mano}
+parametric representation has demonstrated interactive-rate performance on a
+standard CPU-only platform.
 
-\subsubsection{Real-Time Tracking Across the Hardware Spectrum}\label{subsubsec:sota_hardware}
+Efforts to reduce the computational footprint of hand mesh reconstruction have
+produced systems that do achieve interactive rates on mobile hardware.
+Chen et al.\ \cite{chen2022mobrecon} presented MobRecon, which runs at 83\,fps
+on an Apple A14 CPU and achieves substantially lower inference cost than prior
+graph-based or transformer-based regressors.
+However, MobRecon is a non-parametric, vertex-based method: rather than
+regressing \acrshort{mano} pose and shape parameters, it directly predicts the
+3D coordinates of the 778 mesh vertices.
+This design choice is what enables its efficiency---the authors explicitly note
+that \acrshort{mano} coefficient estimation is ill-suited to lightweight networks
+because it is a highly abstract problem that ignores spatial
+correlations~\cite{chen2022mobrecon}---but it means that MobRecon does not
+produce joint rotations in a kinematic hierarchy and therefore cannot directly
+drive a rigged skeletal avatar without a separate pose-extraction step.
 
-The hardware alternatives to webcam-based tracking span a wide range of
-accuracy and acquisition cost, making the accessibility constraint concrete.
+MediaPipe Hands \cite{zhang2020mediapipehands} achieves real-time landmark
+tracking on commodity CPU hardware, but as discussed above its output consists
+of joint coordinates in camera space with wrist-relative depth, encoding no
+joint rotations or kinematic hierarchy.
 
-The Leap Motion Controller tracks hand and finger position using three
-infrared emitters and two infrared cameras. Controlled experiments
-demonstrate axis-independent positional deviations below 0.2\,mm in static
-conditions and an overall average accuracy of 0.7\,mm across all test
-scenarios, broadly confirming the sub-millimetre accuracy the manufacturer
-specifies \cite{weichert2013leap}. These results, however, require a
-dedicated, purpose-built accessory placed at the interaction site.
-
-Head-mounted platforms represent a second trajectory. The Oculus Quest
-headset integrates on-device articulated hand tracking through four
-egocentric monochrome fisheye cameras, enabling interaction without held
-controllers or additional peripherals \cite{han2020megatrack}. The system
-achieves real-time performance at 60\,Hz on a PC and 30\,Hz on a mobile
-processor, yet this capability is inseparable from the headset itself
-\cite{han2020megatrack}.
-
-Each alternative delivers tracking fidelity that a monocular RGB approach
-cannot match.
-None operates on hardware a user already possesses.
-The design constraint of this thesis --- a standard webcam and a
-general-purpose CPU --- is therefore a deliberate commitment to the broadest
-possible user base.
+The system developed in this thesis addresses this gap directly.
+Rather than running a learned model-based regressor at CPU speed---a direction
+not currently supported at interactive rates by any published method that outputs
+\acrshort{mano}-compatible joint rotations---the pipeline pairs the model-free
+speed of MediaPipe with the AIK analytical solver, which maps detected landmarks
+to \acrshort{mano}-compatible joint rotations in closed form without any learned
+network in the pose-estimation path.
