@@ -1,0 +1,59 @@
+\subsection{Parametric Hand Models}\label{subsec:sota_parametric}
+
+Parametric hand models that encode shape and pose in a compact,
+differentiable representation underpin the model-based estimation methods
+surveyed in \autoref{subsec:sota_estimation} and constitute the canonical
+target representation of the present system.
+Among available alternatives, \acrshort{mano}~\cite{MANO:SIGGRAPHASIA:2017}
+has achieved broad consensus as the field standard.
+Li et al.\ characterise it as the most widely adopted hand model in the
+field~\cite{zhang2022nimble}, a standing borne out by its near-universal
+integration across the learning-based regressors, analytical
+inverse-kinematics pipelines, and motion-capture systems reviewed above.
+This adoption rests on a combination of capability and efficiency.
+Learned corrective pose blend shapes substantially reduce joint-collapse
+artefacts compared with plain linear blend skinning, producing qualitatively
+and metrically more accurate finger
+deformation~\cite{MANO:SIGGRAPHASIA:2017}.
+Crucially for the present work, Romero et al.\ explicitly note that, because
+the blend shapes are linear combinations of vertex offsets, their memory
+footprint and runtime are each comparable to the mesh footprint, making
+the model suitable for real-time
+applications~\cite{MANO:SIGGRAPHASIA:2017}.
+
+NIMBLE~\cite{zhang2022nimble} extends \acrshort{mano}'s surface-only
+approach by modelling the hand's internal anatomical structure.
+Rather than modelling the hand surface in isolation, NIMBLE assembles the hand
+from three anatomical layers: 20 bones modelled as triangular meshes, 7 muscle
+groups modelled as tetrahedral meshes, and a single skin mesh, totalling
+14{,}970 vertices and 27{,}106 faces~\cite{zhang2022nimble}.
+Non-rigid tissue deformation is captured during model construction via a
+physically-based registration that incorporates a Neo-Hookean elasticity
+term for muscles and skin (bones use rigid deformation only)~\cite{zhang2022nimble},
+encoding effects such as muscle bulging and skin wrinkling that lie beyond
+the reach of surface-only corrective blend shapes.
+NIMBLE targets photorealistic rendering and animation for Metaverse and
+virtual reality applications; Li et al.\ demonstrate its visual fidelity
+via offline ray-tracing and note integration with rendering engines such
+as Blender and Unity~\cite{zhang2022nimble}.
+All reported experiments are performed on an
+\mbox{NVIDIA GeForce RTX 3090}~\cite{zhang2022nimble}; the system makes no
+claim of real-time inference performance.
+The substantially larger multi-tissue mesh, the GPU-class hardware required
+across all reported experiments, and the design intent of offline photorealistic
+rendering place NIMBLE outside the CPU-only, interactive-rate operating point
+that constrains this thesis (\autoref{subsec:gap}).
+
+For the present work \acrshort{mano} is therefore adopted as the canonical
+parametric target.
+Its lightweight forward pass satisfies the real-time CPU constraint directly;
+its compact $(\boldsymbol{\theta},\,\boldsymbol{\beta})$ parameterisation
+is natively compatible with the analytical inverse-kinematics solver that
+forms the core of this system; and its standing as the de facto output
+representation across the estimation literature ensures direct comparability
+with prior work without additional conversion.
+NIMBLE's superior anatomical detail is a genuine advance for applications
+where photorealistic mesh fidelity is the priority; under the constraints
+of the present setting it offers a level of internal structure that exceeds
+what avatar animation requires, at a computational cost that CPU-only
+deployment cannot sustain.
