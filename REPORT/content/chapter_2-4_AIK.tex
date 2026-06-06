@@ -7,9 +7,8 @@ to joint positions: given $\boldsymbol{\theta}$, every joint's world position
 is obtained by composing rigid-body transforms along the kinematic chain.
 \emph{Inverse kinematics} (\acrshort{ik}) poses the dual problem: given target
 positions for a subset of joints, recover the configuration that produces them.
-Classical \acrshort{ik} solvers --- FABRIK, cyclic-coordinate descent,
-Jacobian-based methods --- iterate until convergence, which makes them
-sensitive to initialisation and frame rate.
+Classical iterative \acrshort{ik} solvers iterate until convergence,
+which makes them sensitive to initialisation and frame rate.
 
 When every joint position is observed simultaneously, the system is
 \emph{fully observed} and the \acrshort{ik} problem can be solved in closed

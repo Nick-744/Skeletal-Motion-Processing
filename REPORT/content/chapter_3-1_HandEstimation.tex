@@ -32,16 +32,15 @@ fitted and no mesh is produced.
 
 The common limitation of both approaches is that their output consists solely
 of joint positions in camera space.
-In MediaPipe, depth is expressed relative to the wrist and does not constitute
-an absolute metric measurement~\cite{zhang2020mediapipehands}.
-Neither method encodes explicit joint rotations or kinematic hierarchy in its
-output representation.
-This coordinate output is sufficient to drive gesture classifiers---MediaPipe
-demonstrates this directly by determining the state of each finger via
-accumulated joint angles and mapping the resulting finger states to predefined
-gesture categories~\cite{zhang2020mediapipehands}---but it cannot directly
-animate a rigged skeletal avatar or generate motion logs in a canonical,
-scale-invariant representation, a gap that the present work addresses.
+As detailed in~\autoref{subsec:mediapipe}, the depth coordinate is wrist-relative
+and carries no absolute metric scale.
+Neither method encodes joint rotations or a kinematic hierarchy in its output:
+both produce a flat set of 3D joint positions, a limitation introduced
+in~\autoref{subsec:gap}.
+This coordinate output suffices for gesture classification---as the finger-state
+mechanism described in~\autoref{subsec:mediapipe} illustrates---but it cannot
+directly animate a rigged skeletal avatar or generate motion logs in a
+canonical, scale-invariant representation.
 
 
 
@@ -140,9 +139,10 @@ correlations~\cite{chen2022mobrecon}---but it means that MobRecon does not
 produce joint rotations in a kinematic hierarchy and therefore cannot directly
 drive a rigged skeletal avatar without a separate pose-extraction step.
 
-MediaPipe Hands \cite{zhang2020mediapipehands} achieves real-time landmark
-tracking on commodity CPU hardware. However, as detailed in \ref{subsubsec:model-free},
-its raw coordinate output lacks the canonical kinematic hierarchy.
+MediaPipe Hands~\cite{zhang2020mediapipehands} achieves real-time landmark
+tracking on commodity CPU hardware but, as established
+in~\autoref{subsubsec:model-free}, its raw coordinate output lacks
+the canonical kinematic hierarchy.
 
 The system developed in this thesis addresses this gap directly.
 Rather than running a learned model-based regressor at CPU speed---a direction
