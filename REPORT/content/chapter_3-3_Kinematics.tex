@@ -57,9 +57,9 @@ under anatomical joint-limit constraints and shape regularisation,
 reporting accuracy competitive with learning-based methods and superior
 to other optimisation-based methods on the Dexter+Object and EgoDexter
 benchmarks.
-The approach is entirely data-free and produces MANO output that
-respects anatomical priors by construction, two properties difficult
-to achieve with purely learned methods.
+The fitting step requires no 3D-annotated training data and produces
+MANO output that respects anatomical priors by construction, two properties
+difficult to achieve with purely learned methods.
 Earlier work by Panteleris et al.~\cite{panteleris2018backrgb} showed
 that optimisation over a kinematic hand model from RGB input could
 produce usable pose estimates without depth data, establishing
@@ -95,7 +95,7 @@ identifying which component of the rotation actually requires learning.
 Using the swing--twist decomposition formalised in~\autoref{subsec:aik},
 HybrIK solves the swing in closed form from the 3D landmarks and
 estimates the underdetermined twist from image features via a
-lightweight network, achieving state-of-the-art body-mesh recovery on
+dedicated network head, achieving state-of-the-art body-mesh recovery on
 3DPW at CVPR\,2021.
 The architecture makes explicit what must be learned (the twist) and
 what need not be (the swing), substantially reducing the capacity
