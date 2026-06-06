@@ -1,0 +1,185 @@
+\subsection{Inverse Kinematics Approaches for Landmark-Driven Hand Pose Recovery}
+\label{subsec:sota_ik}
+
+Given a set of three-dimensional hand landmarks --- such as the 21
+keypoints produced by MediaPipe Hands~\cite{zhang2020mediapipehands}
+--- recovering the MANO joint rotations~$\boldsymbol{\theta}$ is an
+inverse kinematics (IK) problem: find the joint angles whose
+forward-kinematics map reproduces the observed positions.
+The formulation departs from the classical robotics setting in one
+important respect: the 21-landmark case is \emph{fully observed}.
+Every vertex of the kinematic tree has a corresponding detected
+position; no intermediate joints are latent.
+This distinction has direct consequences for which solver families are
+appropriate.
+The four main approaches surveyed below --- iterative numerical methods,
+optimisation-based model fitting, neural regression, and analytical
+closed-form solvers --- are evaluated both on their own reported
+performance and against the deployment constraints of this work.
+
+
+
+\subsubsection{Iterative Numerical Solvers}\label{subsubsec:sota_ik_iterative}
+
+Iterative IK solvers were developed to handle the under-constrained
+case: a manipulator arm whose end-effectors are specified but whose
+intermediate joints are free.
+FABRIK~\cite{aristidou2011fabrik} alternates forward and backward passes
+along the kinematic chain, repositioning each joint toward the next
+target position until all end-effectors lie within a prescribed
+tolerance.
+Cyclic-coordinate descent sweeps the chain joint by joint,
+each time minimising the displacement at the current degree of freedom
+while holding the rest fixed.
+Jacobian-based methods linearise the forward kinematics map and invert
+it via the pseudo-inverse or the Levenberg--Marquardt damped
+least-squares variant~\cite{aristidou2018iksurvey}.
+Each of these families has been applied to articulated hand models:
+Heap and Hogg~\cite{heap1996dynamic} tracked a deformable hand model
+from a single video camera as early as 1996, recovering
+six-degree-of-freedom rigid pose together with PCA-based shape
+deformation through iterative weighted-least-squares fitting.
+
+The fully-observed 21-landmark case exposes a structural mismatch,
+however.
+Iteration is necessary when the problem is under-constrained; when every
+joint position is already known, the kinematic chain is fully
+determined and no iteration is required to infer missing data.
+Applied to the 21-landmark setting, an iterative solver converges to a
+solution that the input already encodes, incurring convergence-dependent
+overhead without recovering any additional information.
+For a real-time pipeline with a tight per-frame latency budget on CPU,
+this is a gratuitous cost.
+
+
+
+\subsubsection{Optimisation-Based Model Fitting}\label{subsubsec:sota_ik_optim}
+
+A second approach formulates IK as minimising a cost function over MANO
+parameters: find $\boldsymbol{\theta}$ (and optionally
+$\boldsymbol{\beta}$) whose forward-kinematics output best matches the
+detected keypoints, subject to anatomical joint-limit constraints.
+The objective may include a 3D positional term, a 2D reprojection term,
+or both, and the minimisation is carried out by a gradient-based solver
+such as L-BFGS.
+
+Drosakis and Argyros~\cite{drosakis2023mano} demonstrate this strategy
+by fitting MANO parameters to OpenPose 2D hand keypoints using L-BFGS
+under anatomical joint-limit constraints and shape regularisation,
+reporting accuracy competitive with learning-based methods and superior
+to other optimisation-based methods on the Dexter+Object and EgoDexter
+benchmarks.
+The approach is entirely data-free and produces MANO output that
+respects anatomical priors by construction, two properties difficult
+to achieve with purely learned methods.
+Earlier work by Panteleris et al.~\cite{panteleris2018backrgb} showed
+that optimisation over a kinematic hand model from RGB input could
+produce usable pose estimates without depth data, establishing
+the viability of the model-fitting paradigm for monocular settings.
+
+The principal limitation of gradient-based fitting is that per-frame
+solve time is data-dependent: the number of iterations required varies
+with pose complexity, the initialisation quality, and the curvature of
+the loss landscape.
+On CPU hardware, where evaluating the MANO forward pass is
+considerably slower than on GPU, this makes the solver unsuitable for
+interactive-rate applications where a consistent per-frame budget must
+be met.
+
+
+
+\subsubsection{Neural Regression}\label{subsubsec:sota_ik_neural}
+
+Neural IK replaces the iterative or gradient loop with a single
+feed-forward pass, bounding per-frame inference cost regardless of pose
+complexity.
+
+Zhou et al.~\cite{zhou2020monocular} introduced IKNet as part of the
+Minimal-Hand pipeline: a seven-layer fully-connected network trained on
+motion-capture data that maps root-relative 3D joint positions directly
+to per-joint unit-quaternion rotations.
+IKNet adds approximately \SI{0.9}{\ms} of inference overhead on an
+NVIDIA GTX\,1080\,Ti, and the full Minimal-Hand pipeline
+(DetNet\,+\,IKNet) exceeds 100\,fps on that
+hardware~\cite{zhou2020monocular}.
+The network is compact and fast; inference cost is strictly bounded by
+the forward-pass time regardless of the input pose.
+Published performance figures are on GPU hardware, and the network
+encodes a pose prior from training data, introducing a data dependency
+absent from purely geometric methods.
+
+Li et al.~\cite{li2021hybrik} refined the neural approach by identifying
+which component of the rotation actually requires learning.
+Each per-joint rotation can be decomposed into a \emph{swing} --- the
+minimal rotation aligning the canonical bone direction with the
+observed bone direction, uniquely and analytically determined from the
+3D landmarks --- and a \emph{twist}, a rotation about the bone's own
+axis that the swing leaves underdetermined.
+HybrIK solves the swing in closed form from the landmarks and estimates
+the twist from image features via a lightweight network, achieving
+state-of-the-art body-mesh recovery on 3DPW at CVPR\,2021.
+The architecture makes explicit what must be learned (the twist) and
+what need not be (the swing), substantially reducing the capacity
+required of the network.
+Li et al.\ subsequently extended the same decomposition to whole-body
+recovery, including articulated hands, in
+HybrIK-X~\cite{li2023hybrikx}.
+Both models are evaluated exclusively on GPU hardware in their published
+benchmarks; no interactive-rate deployment on CPU is reported for either.
+
+
+
+\subsubsection{Analytical Closed-Form Solvers}\label{subsubsec:sota_ik_analytical}
+
+The fourth family removes the neural component from the IK path
+entirely, relying instead on the geometric structure of the
+fully-observed landmark set.
+
+The AIK algorithm shares the swing–twist decomposition that HybrIK
+also employs (originally due to Baerlocher and Bouloch) but diverges
+at the twist.
+Global root orientation is recovered as the rotation that best aligns
+the five canonical wrist-to-MCP vectors with their observed
+counterparts, solved in closed form via singular-value decomposition
+of the cross-covariance matrix following
+Arun et al.~\cite{arun1987leastsquares}.
+Each subsequent joint rotation is then resolved as a pure swing along
+the kinematic chain: the minimal rotation mapping the parent-relative
+canonical bone direction onto the observed direction.
+The twist is set to zero for all finger joints.
+
+This is not a numerical shortcut.
+Axial rotation about a finger metacarpal or phalanx is
+physiologically negligible in natural hand motion; the dominant degrees
+of freedom at each finger joint are flexion--extension and, at the
+metacarpophalangeal joints, abduction--adduction, both of which are
+fully captured by the swing~(\autoref{subsec:aik}).
+The discarded twist degree of freedom carries minimal perceptual or
+kinematic weight in practice.
+
+With the iterative loop, the gradient solver, and the neural network
+all removed, the entire landmark-to-rotation path reduces to a single
+traversal of the kinematic tree.
+Per-frame cost is deterministic, scales only with the number of joints,
+and carries no dependency on training data, convergence tolerance, or
+GPU hardware.
+
+
+
+\subsubsection{Summary and Solver Selection}\label{subsubsec:sota_ik_summary}
+
+Iterative solvers are data-free but impose convergence overhead that is
+structurally unnecessary when the input is fully observed.
+Optimisation-based fitting produces anatomically regularised output but
+its unbounded solve time disqualifies it from interactive CPU
+deployment.
+Neural regression, and in particular the HybrIK-X decomposition,
+achieves the highest reconstruction accuracy, recovering the twist
+component that geometry alone cannot determine; the cost is a GPU
+backbone for the twist network that places it outside the deployment
+target.
+AIK is the only approach satisfying all three constraints
+simultaneously: it is data-free, executes in deterministic time on
+CPU, and its per-frame cost is bounded by construction.
+HybrIK-X therefore defines the accuracy ceiling the present system does
+not reach; AIK defines the latency and hardware floor it operates within.
