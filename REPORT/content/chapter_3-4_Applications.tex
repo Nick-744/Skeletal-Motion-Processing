@@ -1,0 +1,137 @@
+\subsection{Markerless Hand-Based Interaction and Creative Applications}
+\label{subsec:sota_interaction}
+
+The subsections so far have evaluated the components that convert a webcam
+image into a canonical hand pose.
+This final subsection turns from the pipeline to its purpose: the interactive
+and creative systems such a pose is built to drive.
+The three constraints of \autoref{subsec:gap} apply here as forcefully as they
+do to estimation, but they reframe the question.
+What matters is no longer how accurately a hand can be reconstructed, but what
+input hardware a user must first acquire before the hand can act as a
+controller at all.
+
+
+
+\subsubsection{Gesture-Based HCI and Mid-Air Interaction}\label{subsubsec:sota_gesture}
+
+The idea of the hand as a direct input channel is one of the oldest in
+\acrshort{hci}.
+Bolt's \emph{Put-that-there}~\cite{bolt1980putthatthere} coupled spoken commands
+with spatial pointing to command shapes on a graphics display, demonstrating
+that gesture aided by a second modality gains both naturalness and referential
+precision.
+The system instrumented the hand with a position sensor; its lasting
+contribution was conceptual, establishing the pointing hand as a spatial
+reference for an interface.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{justification=centering}
+    \includegraphics[width=0.8\linewidth, frame]{img/put-that-there-original-sma.jpg}
+    \caption{A user pointing at shapes on the Media Room display.
+             Adapted from~\cite{bolt1980putthatthere}.}
+    \label{fig:bolt_put_that_there}
+\end{figure}
+
+Vision offered a route to the same naturalness without instrumenting the user.
+Freeman et al.~\cite{freeman1998vision} argued that a camera can sense pointing
+and gesture directly, and that such unencumbered interaction makes computers
+easier to use; they demonstrated several vision-controlled graphics
+applications, including a game, driven from a single camera.
+The maturation of this paradigm is surveyed by Rautaray and
+Agrawal~\cite{rautaray2015vision}, who decompose gesture recognition into
+detection, tracking, and recognition, and position hand gestures as a natural
+alternative to the mouse and keyboard.
+Across this line of work the recurring promise is interaction in which the user
+holds and wears nothing; the recurring difficulty, until recently, was that a
+single RGB camera could not recover a pose precise enough to drive
+more than coarse cursor or classification tasks.
+The model-free and model-based estimators of \autoref{subsec:sota_estimation}
+are what closed that gap, making the hand viable as a fine-grained spatial
+controller from commodity input.
+
+
+
+\subsubsection{Hand Tracking in Games and Immersive Environments}\label{subsubsec:sota_immersive}
+
+As tracking matured, hand input moved from research demonstrations into shipping
+interactive products.
+The most capable of these systems, however, reach their accuracy by adding
+dedicated sensing hardware.
+Weichert et al.~\cite{weichert2013leap} characterise the Leap Motion Controller,
+a desktop optical device marketed for hand-gesture-controlled interfaces with a
+declared sub-millimetre accuracy; their measurements place the tracking
+deviation at roughly 0.2\,mm in static and 1.2\,mm in dynamic conditions.
+The device delivers tracking precise enough for gestural game and desktop
+control, but it is a separate peripheral the user must purchase and position.
+
+Egocentric tracking integrated into head-mounted displays represents the
+current production standard.
+Han et al.~\cite{han2020megatrack} present MEgATrack, a real-time articulated
+hand-tracking system that runs at 60\,Hz on a PC and 30\,Hz on
+a mobile processor and is the default hand-tracking feature on the Oculus Quest
+headset, where it powers both input and social presence.
+It demonstrates that controller-free hand input is robust enough to serve as a
+primary interaction modality in immersive environments, but it recovers pose
+from four fisheye monochrome cameras built into the headset rather than from any
+commodity sensor.
+Both systems establish that hand tracking is mature enough to drive games and
+immersive applications directly.
+Both also illustrate the cost the present work seeks to avoid: each presupposes
+a sensing apparatus---an optical peripheral or a head-mounted multi-camera
+rig---that lies beyond the single webcam fixed by \autoref{subsec:gap}.
+
+
+
+\subsubsection{Immersive 3D Creation and the Controller Assumption}\label{subsubsec:sota_creative}
+
+The richest application of spatial hand input is three-dimensional content
+creation, where the hand becomes a tool for drawing, sculpting, and painting
+directly in space.
+The paradigm originates with CavePainting~\cite{keefe2001cavepainting}, which
+treats a brush stroke as a three-dimensional analogue of its
+two-dimensional counterpart and lets an artist create works inside a fully
+immersive CAVE using physical props and full-body gesture.
+Keefe et al.\ report that artists valued precisely this embodied, whole-body
+character of the act of making.
+The approach has since matured into widely adopted commercial tools, of which
+Google Tilt Brush and Gravity Sketch are the most prominent, in which marks are
+deposited in space by moving the hand through it.
+
+The defining feature of these tools, for the purposes of this thesis, is the
+input apparatus they assume.
+Drey et al.~\cite{drey2020vrsketchin} observe that the available
+\acrshort{vr} sketching tools, Tilt Brush and Gravity Sketch among them,
+concentrate almost exclusively on unconstrained mid-air drawing, and attribute
+this in part to the absence of any input device in \acrshort{vr} other
+than the hand-held controller, a device optimised for entertainment rather than
+precise creation.
+Mid-air drawing in \acrshort{vr} is itself imprecise regardless of the input device:
+Arora et al.~\cite{arora2017sketching} show through controlled study
+that the absence of a physical drawing surface is a major source of inaccuracy
+in \acrshort{vr} sketching.
+The state of the art in immersive creation is therefore doubly hardware-bound.
+It presupposes a head-mounted display together with a pair of controllers, and
+even with that apparatus in hand it trades away the surface-supported precision
+of conventional drawing.
+
+This is the gap the creative application of the present system targets.
+The painting scene introduced in \autoref{subsec:contributions} offers the same
+core affordance these tools provide---depositing geometry in three dimensions by
+moving the hand, with point-cloud export---while removing the apparatus their
+interaction model assumes.
+No head-mounted display and no controllers are required.
+The hand is sensed by the same commodity webcam and \acrshort{cpu}-only pipeline
+used throughout this thesis, and the canonical \acrshort{mano} pose recovered
+upstream (\autoref{subsec:sota_estimation},~\autoref{subsec:sota_ik}) supplies
+the spatial input a controller would otherwise carry.
+
+The trade is the one this thesis makes throughout.
+The dedicated rigs of Tilt Brush and Gravity Sketch, and the headset systems
+that host them, achieve a spatial precision and a tracking volume that a single
+RGB camera cannot match; what the present system offers in their place
+is a creative three-dimensional interface carrying no adoption cost beyond
+hardware the user already owns.
+Where the immersive tools define the fidelity ceiling for spatial creation, the
+webcam painting tool defines its accessibility floor.
