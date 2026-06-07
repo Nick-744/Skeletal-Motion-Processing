@@ -64,9 +64,10 @@ class HandTracker:
             running_mode    = VisionRunningMode.LIVE_STREAM,
             result_callback = self._on_result,
 
-            min_hand_detection_confidence = min_confidence,
-            min_hand_presence_confidence  = min_confidence,
-            min_tracking_confidence       = min_confidence
+            # min_hand_detection_confidence = min_confidence,
+            # min_hand_presence_confidence  = min_confidence,
+            # min_tracking_confidence       = min_confidence
+            # Terrible idea...
         )
 
         with Suppress():

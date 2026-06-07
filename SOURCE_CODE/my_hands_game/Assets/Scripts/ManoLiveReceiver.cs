@@ -206,7 +206,7 @@ public class ManoLiveReceiver : MonoBehaviour
         root.localPosition = new Vector3(x, y, z);
     }
 
-    void OnApplicationQuit()
+    void OnDestroy()
     {
         if (latencyFileWriter != null)
         {
@@ -214,7 +214,18 @@ public class ManoLiveReceiver : MonoBehaviour
             latencyFileWriter = null;
         }
 
-        if (receiveThread != null) receiveThread.Abort();
-        if (client != null) client.Close();
+        if (client != null)
+        {
+            client.Close();
+            client = null;
+        }
+
+        if (receiveThread != null)
+        {
+            receiveThread.Abort();
+            receiveThread = null;
+        }
+
+        Debug.Log("ManoLiveReceiver destroyed successfully.");
     }
 }
