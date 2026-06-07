@@ -1,0 +1,62 @@
+\subsection{The Adaptive Inverse Kinematics Solver}\label{subsec:ik_impl}
+
+The analytical core of the pipeline recovers \acrshort{mano} joint rotations from
+the 21 landmarks in a single pass, with no iteration and no learned component, as
+formalised in \autoref{subsec:aik}. Its implementation is split across two
+modules: \texttt{armatures}, which defines the skeleton and the bookkeeping that
+reconciles the two landmark conventions, and \texttt{AIK}, which performs the
+solve itself.
+
+\subsubsection{Skeleton Definition and Index Bookkeeping}\label{subsubsec:armature}
+
+The MediaPipe and \acrshort{mano} skeletons number their joints differently, as
+shown in \autoref{fig:mediapipe-joints} and \autoref{fig:mano-joints}. The
+\texttt{MANOArmature} class holds the data structures that bridge them. It
+describes a skeleton of 16 movable joints and 21 keypoints. A parent table,
+\texttt{snap\_parent}, gives the parent of each of the 21 keypoints in MediaPipe
+ordering, encoding the topology in which the wrist is the root and the five
+finger bases attach directly to it, with each finger continuing as a chain. A
+second list, \texttt{kinematic\_tree}, enumerates the fifteen non-base joints for
+which a per-joint rotation must be solved, ordered so that every parent precedes
+its children. A mapping, \texttt{id\_to\_rot}, routes each solved rotation into
+its slot in \acrshort{mano}'s sixteen-entry pose vector, absorbing the difference
+in finger ordering between the two conventions. Finally, \texttt{keypoints\_ext}
+lists the five mesh vertices that define the fingertips; these are the indices
+consumed by the extended regressor of \autoref{subsec:forward_model}.
+
+\subsubsection{From Landmarks to Joint Rotations}\label{subsubsec:aik_impl}
+
+The \texttt{adaptive\_IK} function takes a template skeleton and a target
+skeleton, both as $21 \times 3$ arrays in MediaPipe ordering, and returns the
+joint rotations that pose the template onto the target. All twist angles are
+initialised to zero.
+
+The global rotation of the wrist is recovered first, by the point-set alignment of
+\autoref{subsec:aik}. The five vectors pointing from the wrist to the finger bases
+are taken from both the template and the target, their cross-covariance matrix is
+formed, and its singular value decomposition yields the rotation as
+$R_0 = \mathbf{V}\mathbf{U}^{\top}$~(\autoref{eq:R0}). When the vectors are
+near-coplanar the decomposition can return a reflection; this is detected through
+the determinant and corrected by negating the sign of the last column of
+$\mathbf{V}$ before recomputing $R_0$, recovering the nearest proper rotation
+exactly as prescribed by Arun et al.~\cite{arun1987leastsquares}. Because the
+metacarpal plate is treated as rigid, this single rotation is assigned to the
+wrist and to all five finger bases.
+
+The remaining joints are then processed along \texttt{kinematic\_tree} in
+parent-before-child order. For each joint the parent's world position is first
+propagated by applying the grandparent's rotation to the template bone, as in the
+forward-kinematics step of \autoref{subsec:aik}. The observed target is brought
+into the parent's local frame, and the swing rotation that aligns the rest-pose
+bone with the observed bone is computed from the cross product and the angle
+between them~(\autoref{eq:swing}). Since the twist is held at zero for every
+joint, the local rotation reduces to this swing alone~(\autoref{eq:local_rot}),
+and the joint's absolute rotation follows by composition with its parent's.
+
+The function returns a stack of rotation matrices in which the first slot holds the
+absolute global rotation and the remaining fifteen hold the per-joint relative
+rotations, placed through \texttt{id\_to\_rot} so that the result is already in
+\acrshort{mano} pose-vector order. The entire landmark-to-rotation computation is
+thus a single matrix decomposition followed by one traversal of the tree, with no
+iterative refinement and no learned network in the path --- the analytical
+closed-form solver positioned in \autoref{subsubsec:sota_ik_analytical}.

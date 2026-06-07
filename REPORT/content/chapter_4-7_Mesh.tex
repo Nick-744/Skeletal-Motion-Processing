@@ -1,0 +1,23 @@
+\subsection{Pose Recovery and Mesh Reconstruction}\label{subsec:mesh_recon}
+
+The \texttt{ManoHand} class in \texttt{mano\_mesh\_reconstruction} ties the solver
+to the forward model for a single hand. On construction it instantiates a
+\texttt{KinematicModel} with the \texttt{MANOArmature}, evaluates it at the zero
+pose to obtain the rest-pose keypoints, and reorders those keypoints from
+\acrshort{mano} ordering into MediaPipe ordering. This reordered template shares
+its indexing with the detector's output, so that template and target are aligned
+when both are passed to the solver.
+
+The per-frame work is performed by \texttt{solve}. The observed landmarks are
+assembled into a target skeleton and normalised to the template's scale: the ratio
+of the wrist-to-middle-finger-base distance in the template to the same distance
+in the target is applied to the target, which is then translated so that its wrist
+coincides with the template's. The normalised target and the template are passed
+to \texttt{adaptive\_IK}, which returns the joint rotations as matrices. Each
+matrix is converted to an axis-angle vector, with guards for degenerate cases: a
+zero matrix is treated as the identity, and a conversion that yields a
+non-numeric result or raises an error falls back to a zero rotation. The resulting
+axis-angle pose, whose first entry is the global wrist rotation, is applied to the
+forward model to deform the mesh. \texttt{solve} returns both the mesh vertices,
+for local visualisation, and the axis-angle pose, which is the quantity
+transmitted to the renderer.

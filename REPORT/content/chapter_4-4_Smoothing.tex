@@ -1,0 +1,26 @@
+\subsection{Metric Landmark Extraction and Adaptive Smoothing}\label{subsec:landmark_smoothing}
+
+For each detected hand, MediaPipe returns two distinct landmark sets, and
+\texttt{hand\_kinematics\_3D} uses both for complementary purposes. The
+\emph{world} landmarks are expressed in metric units with the wrist at the
+origin, and so describe the hand's intrinsic shape and proportions; the
+\emph{image} landmarks are normalised to the frame and so describe where the hand
+sits on screen. The \texttt{Hand3D} class converts these into the input the rest
+of the pipeline expects.
+
+The hand shape is taken from the world landmarks, scaled by a constant factor, and
+smoothed with the 1\euro{} filter~(\autoref{subsec:one_euro_filter}). A separate filter
+instance is maintained for each hand so that the two are smoothed independently.
+
+Because the world landmarks are wrist-relative, they carry no information about how
+far the hand is from the camera. That information is restored separately, in an
+\emph{anchor} that locates the hand in the scene. The anchor combines the wrist's
+image-space position with a depth estimate produced by \texttt{\_estimate\_scale},
+which compares the mean image-space length of a stable subset of bones against
+their mean metric length in world space. The subset is fixed in advance --- the
+thumb chain, the index and pinky bases, and the row of knuckles --- and the ratio
+of the two means serves as a monocular depth cue, since a hand closer to the camera
+projects to larger image-space distances. The anchor is passed through its own
+1\euro{} filter, again one instance per hand. \texttt{get\_3d\_coordinates}
+returns the filtered shape and the filtered anchor as two separate sets, so that a
+metrically correct hand can later be placed at the estimated location.

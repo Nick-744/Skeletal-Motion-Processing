@@ -1,0 +1,38 @@
+\subsection{Pose Serialisation and UDP Streaming}\label{subsec:streaming}
+
+The online pipeline is driven from \texttt{mano\_unity\_streamer}, which assembles
+the solved pose into a datagram and transmits it. It opens a \acrshort{udp} socket
+to the loopback address \texttt{127.0.0.1} on port \texttt{5052}. Because the
+renderer runs as a separate process on the same machine, and because each new pose
+supersedes the previous one, the connectionless, fire-and-forget character of
+\acrshort{udp} fits the link exactly: a lost datagram costs at most a single
+skipped frame rather than a latency spike, for the reasons set out in
+\autoref{subsec:udp}.
+
+Each iteration of the main loop captures a frame, records a millisecond timestamp,
+mirrors the frame horizontally for a selfie view, and runs detection. The metric
+landmarks and anchors are obtained from \texttt{Hand3D}, and for every detected
+hand the handedness and gesture labels are read from the detector result and the
+pose is solved with the matching left or right \texttt{ManoHand}. The solved
+rotations, the gesture, and the anchor are written into the per-hand fields of a
+frame payload.
+
+The payload is serialised as \acrshort{json}. It carries the timestamp and, for
+each hand, the sixteen axis-angle joint rotations, the gesture label, and the
+three-component anchor; any field whose hand is not present in the frame is left
+null. This per-hand, nullable structure is precisely the optional-field
+flexibility for which \acrshort{json} was chosen in \autoref{subsec:udp}.
+
+A datagram is transmitted only when at least one hand has been solved, so the
+channel stays idle during frames with no visible hands~(\autoref{subsec:udp}). On
+the receiving side, a Unity component (\texttt{ManoLiveReceiver.cs}) deserialises
+the stream and drives the avatars; it is described in the following chapter.
+
+Taken together, these modules realise the landmark-to-rotation pipeline positioned
+in \autoref{subsec:sota_ik}: a model-free detector~(\autoref{subsubsec:model-free})
+feeding a closed-form analytical solver~(\autoref{subsubsec:sota_ik_analytical}),
+with no learned network anywhere in the pose-estimation path and a per-frame cost
+that is deterministic by construction. The output is a compact \acrshort{mano}
+pose, invariant to hand size and camera distance, accompanied by a gesture label
+and a placement anchor, produced on commodity \acrshort{cpu} hardware --- the
+canonical representation that the Unity application consumes.
