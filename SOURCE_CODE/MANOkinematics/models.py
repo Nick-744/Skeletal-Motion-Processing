@@ -155,6 +155,12 @@ class KinematicModel():
     self.J = self.J_regressor.dot(verts)
     self.R = self.rodrigues(self.pose.reshape((-1, 1, 3)))
 
+    # POSE BLEND SHAPES: Add pose-corrective term B_P(theta)
+    # For each non-root joint, flatten (R_n - I) into a 135-element feature vector
+    # and project through the learned basis to get per-vertex corrections.
+    pose_feature = (self.R[1:] - np.eye(3)).flatten()
+    verts       += self.mesh_pose_basis.dot(pose_feature)
+
     # FORWARD KINEMATICS: Compute global transformation matrices for each joint
     G    = np.empty((self.n_joints, 4, 4))
     # Root joint (index 0):
