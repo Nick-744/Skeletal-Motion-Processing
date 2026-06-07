@@ -23,6 +23,15 @@ three-component anchor; any field whose hand is not present in the frame is left
 null. This per-hand, nullable structure is precisely the optional-field
 flexibility for which \acrshort{json} was chosen in \autoref{subsec:udp}.
 
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.7\linewidth, frame]{img/UDP_Datagram-JSON_Schema.png}
+	\caption{Schema of the JSON datagram transmitted to Unity over UDP per captured frame.
+	         Fields for undetected hands carry a \texttt{null} value.}
+	\label{fig:udp-schema}
+\end{figure}
+
 A datagram is transmitted only when at least one hand has been solved, so the
 channel stays idle during frames with no visible hands~(\autoref{subsec:udp}). On
 the receiving side, a Unity component (\texttt{ManoLiveReceiver.cs}) deserialises
