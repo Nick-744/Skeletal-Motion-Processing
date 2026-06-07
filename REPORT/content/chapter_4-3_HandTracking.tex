@@ -1,0 +1,28 @@
+\subsection{Hand Detection and Live-Stream Tracking}\label{subsec:hand_tracking}
+
+The front end of the online pipeline is \texttt{hand\_engine}, which wraps the
+MediaPipe detector in a \texttt{HandTracker} class. The detector used is the
+MediaPipe \texttt{GestureRecognizer}, which embeds the hand-landmark model
+described in \autoref{subsec:mediapipe} and returns, from a single inference, both
+the 21 landmarks per hand and a gesture label. It is loaded from the bundled
+\texttt{gesture\_recognizer.task} asset and configured to track up to two hands,
+with the minimum hand-detection, hand-presence, and tracking-confidence
+thresholds all set to $0.8$.
+
+The recogniser runs in MediaPipe's live-stream mode, which is asynchronous. Each
+frame is submitted through \texttt{recognize\_async} together with a
+monotonically increasing microsecond timestamp, and the detector returns its
+output through a callback rather than blocking the caller. \texttt{HandTracker}
+stores the most recent result in a private field guarded by a lock and exposes it
+through a \texttt{latest\_result} property. This design decouples inference from
+capture: the capture loop dispatches a frame and immediately reads whatever result
+is currently available, so it never stalls waiting for the detector to finish, and
+the rest of the pipeline always operates on the latest completed detection. The
+re-use of the previous frame's bounding box and the confidence-based
+re-triggering of the palm detector, both established in \autoref{subsec:mediapipe},
+are handled internally by MediaPipe.
+
+Two helper methods complete the front end. \texttt{detect} converts the incoming
+OpenCV frame from BGR to RGB, wraps it as a MediaPipe image, and dispatches it for
+asynchronous recognition. \texttt{draw} overlays the detected landmark
+connections on the frame for on-screen inspection during development.

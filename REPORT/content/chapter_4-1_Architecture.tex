@@ -1,0 +1,63 @@
+% Chapter 4 - Real-Time Hand Tracking Pipeline
+
+\section{Real-Time Hand Tracking Pipeline}\label{sec:pipeline}
+
+The preceding chapters established the theoretical foundations on which the
+system rests~(\autoref{sec:theory}) and positioned it against the competing
+approaches surveyed in the state of the art~(\autoref{sec:sota}). This chapter
+turns to the implementation. It describes the Python pipeline that converts a
+single webcam frame into a canonical \acrshort{mano} pose --- a set of axis-angle
+joint rotations independent of hand size and camera distance~(\autoref{subsec:gap})
+--- and streams that pose, together with a recognised gesture and a placement
+anchor, to a separate rendering process. The Unity application that consumes the
+stream is the subject of the following chapter.
+
+The presentation follows the same pipeline order as the theoretical background:
+from the once-only preparation of the hand model, through detection, metric
+landmark extraction, and the forward and inverse kinematic models, to the
+serialisation and transport layer that closes the loop with the renderer.
+
+\subsection{Pipeline Architecture and Module Organisation}\label{subsec:pipeline_arch}
+
+The implementation separates into two stages with very different execution
+profiles. An \emph{offline} stage runs once to convert the official \acrshort{mano}
+release into a lightweight runtime format. An \emph{online} stage then processes
+each webcam frame at interactive rate, and contains the entire per-frame data
+path from capture to transmission.
+
+The kinematic core is collected in a single package, \texttt{MANOkinematics},
+whose modules correspond directly to the components introduced in the
+theoretical background. \texttt{config} resolves the model file paths;
+\texttt{prepare\_model} performs the offline conversion; \texttt{armatures}
+defines the skeleton and the index bookkeeping that bridges the two landmark
+conventions; \texttt{models} realises the \acrshort{mano} forward pass;
+\texttt{AIK} is the analytical inverse-kinematics solver; and \texttt{smoother}
+provides the adaptive filter applied to the raw landmarks. Around this package, a
+set of top-level modules drives the live pipeline: \texttt{hand\_engine} wraps the
+MediaPipe detector and exposes its latest result; \texttt{hand\_kinematics\_3D}
+converts that result into smoothed metric landmarks and a placement anchor;
+\texttt{mano\_mesh\_reconstruction} connects the solver to the forward model for a
+single hand; and \texttt{mano\_unity\_streamer} serialises the solved pose and
+transmits it.
+
+In the online stage each frame flows through these modules in sequence. The
+detector returns the 21 landmarks per hand; \texttt{hand\_kinematics\_3D} converts
+them to a metric, filtered hand shape and a separate anchor describing where the
+hand sits in the scene; \texttt{mano\_mesh\_reconstruction} feeds the shape to the
+inverse-kinematics solver to recover \acrshort{mano} joint rotations; and
+\texttt{mano\_unity\_streamer} packages the rotations, the gesture label, and the
+anchor into a datagram and sends it to the renderer. Two diagnostic visualisers
+--- a Matplotlib landmark view (\texttt{HandVisualizer3D}) and an Open3D mesh view
+(\texttt{ManoVisualizer}) --- are available during development, but neither
+participates in the streaming path and both are absent from the deployed
+pipeline.
+
+% \begin{figure}[H]
+% 	\centering
+% 	\captionsetup{justification=centering}
+% 	\includegraphics[width=0.9\linewidth, frame]{img/pipeline_architecture.png}
+% 	\caption{Data flow of the real-time pipeline, from webcam capture through
+% 	         detection, metric landmark extraction, inverse kinematics, and
+% 	         serialisation to the Unity receiver.}
+% 	\label{fig:pipeline-architecture}
+% \end{figure}

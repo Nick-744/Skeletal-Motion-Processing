@@ -1,0 +1,28 @@
+\subsection{Offline Preparation of the MANO Model}\label{subsec:model_prep}
+
+The official \acrshort{mano} model is distributed as a legacy Python pickle that
+depends on the \texttt{chumpy} autodifferentiation library and an old NumPy
+object layout. Loading it directly on every run would be slow and would couple the
+runtime to deprecated dependencies, so the model is converted once into a plain
+NumPy dictionary that the pipeline loads thereafter.
+
+\texttt{config} resolves the relevant paths relative to the package location. The
+source directory holds the official releases (\texttt{MANO\_LEFT.pkl} and
+\texttt{MANO\_RIGHT.pkl}); the output directory, created on first run if absent,
+receives the converted files (\texttt{mano\_left.pkl} and \texttt{mano\_right.pkl}).
+
+\texttt{prepare\_model} performs the conversion for both hands. It reads the
+official pickle with \texttt{latin1} encoding and extracts only the fields the
+runtime requires, renaming them to the project's schema: the pose
+\acrshort{pca} basis and mean (from \texttt{hands\_components} and
+\texttt{hands\_mean}), the joint regressor (densified from its sparse form via
+\texttt{toarray}), the skinning weights, the pose and shape blend-shape bases
+(from \texttt{posedirs} and \texttt{shapedirs}), the template mesh, the face
+topology, and the kinematic tree (the first row of \texttt{kintree\_table}, with
+the root's parent set to \texttt{None}). Because the original pickle was written
+against an earlier NumPy and Python, the module first installs a small set of
+compatibility aliases --- restoring removed type names such as \texttt{np.bool}
+and \texttt{np.int}, and mapping \texttt{inspect.getargspec} to its modern
+replacement --- so that the legacy object can be unpickled under the current
+environment. The result is a self-contained file that loads quickly and carries
+none of the original model's dependencies.
