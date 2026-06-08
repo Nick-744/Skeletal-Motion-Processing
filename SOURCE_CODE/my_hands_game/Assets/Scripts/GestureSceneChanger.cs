@@ -19,11 +19,15 @@ public class CircularSceneChanger : MonoBehaviour
     public string handGestureUp   = "Thumb_Up";
     public string handGestureDown = "Thumb_Down";
 
-    private bool isLoading = false;
+    [Header("Settings")]
+    public float cooldownDuration            = 2f;
+    private static float lastSceneChangeTime = -10f;
 
     void Update()
     {
-        if (manoReceiver == null || isLoading) return;
+        if (manoReceiver == null) return;
+
+        if (Time.time - lastSceneChangeTime < cooldownDuration) return;
 
         bool forwardGesture  = manoReceiver.currentLeftGesture  == handGestureDown &&
                                manoReceiver.currentRightGesture == handGestureUp;
@@ -37,7 +41,7 @@ public class CircularSceneChanger : MonoBehaviour
 
     private void TriggerNextScene(int direction = 1)
     {
-        isLoading = true; // Prevent rapid-fire loading
+        lastSceneChangeTime = Time.time; // Prevent rapid-fire loading
 
         // Get the name of the current active scene
         string currentScene = SceneManager.GetActiveScene().name;
