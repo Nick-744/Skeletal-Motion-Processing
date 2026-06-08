@@ -105,6 +105,18 @@ public class ManoLiveReceiver : MonoBehaviour
 
     void Update()
     {
+        if (isLogging)
+        {
+            logTimer += Time.deltaTime;
+            if (logTimer > logDurationMinutes * 60f)
+            {
+                isLogging         = false;
+                latencyFileWriter.Close();
+                latencyFileWriter = null;
+                Debug.Log("Finished latency logging.");
+            }
+        }
+
         // Toggle hand visibility (Grappling Mode)
         if (isGrapplingMode != wasGrapplingMode)
         {
@@ -131,17 +143,7 @@ public class ManoLiveReceiver : MonoBehaviour
             long softwareLatency = currentTimeMs - payload.timestamp_ms;
 
             if (isLogging)
-            {
-                logTimer += Time.deltaTime;
-                if (logTimer <= logDurationMinutes * 60f) latencyFileWriter.WriteLine($"{currentTimeMs},{softwareLatency}");
-                else
-                {
-                    isLogging         = false;
-                    latencyFileWriter.Close();
-                    latencyFileWriter = null;
-                    Debug.Log("Finished latency logging.");
-                }
-            }
+                latencyFileWriter.WriteLine($"{currentTimeMs},{softwareLatency}");
 
             // ---< CROSS-MAPPING >--- //
 

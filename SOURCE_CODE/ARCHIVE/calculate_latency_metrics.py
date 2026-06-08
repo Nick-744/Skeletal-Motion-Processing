@@ -5,7 +5,9 @@ import statistics
 
 # Setup the paths...
 script_dir    = os.path.dirname(os.path.abspath(__file__))
-csv_file_path = os.path.join(script_dir, 'Assets', 'LatencyLog.csv')
+csv_file_path = os.path.abspath(
+    os.path.join(script_dir, '..', 'my_hands_game', 'Assets', 'LatencyLog.csv')
+)
 
 def main():
     if not os.path.exists(csv_file_path):
