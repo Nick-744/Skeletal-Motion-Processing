@@ -45,7 +45,11 @@ public class HandPointer : MonoBehaviour
         laserPointerMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         laserPointerMarker.transform.localScale = Vector3.one * 0.1f;
         Destroy(laserPointerMarker.GetComponent<Collider>());
-        laserPointerMarker.GetComponent<Renderer>().material.color = Color.red;
+        
+        Renderer markerRenderer       = laserPointerMarker.GetComponent<Renderer>();
+        markerRenderer.material       = new Material(Shader.Find("Sprites/Default"));
+        markerRenderer.material.color = Color.red;
+        
         laserPointerMarker.SetActive(false);
 
         // Laser Beam

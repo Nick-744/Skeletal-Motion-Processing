@@ -94,7 +94,9 @@ public class BraceletMenuCore : MonoBehaviour
         band.transform.localEulerAngles = braceletRotationOffset;
         band.transform.localPosition    = braceletPositionOffset;
         
-        band.GetComponent<Renderer>().material.color = Color.yellow;
+        Renderer bandRenderer       = band.GetComponent<Renderer>();
+        bandRenderer.material       = new Material(Shader.Find("Sprites/Default"));
+        bandRenderer.material.color = Color.yellow;
         
         // Remove physics collider
         Destroy(band.GetComponent<Collider>());
@@ -114,9 +116,11 @@ public class BraceletMenuCore : MonoBehaviour
             
             defaultLocalPositions[i]         = rotatedOrbitPos + braceletPositionOffset; // Store the default local position
             balls[i].transform.localPosition = defaultLocalPositions[i];
-            
             balls[i].transform.localScale    = Vector3.one * ballScale;
-            balls[i].GetComponent<Renderer>().material.color = defaultColor;
+            
+            Renderer ballRenderer       = balls[i].GetComponent<Renderer>();
+            ballRenderer.material       = new Material(Shader.Find("Sprites/Default"));
+            ballRenderer.material.color = defaultColor;
             
             // Remove physics collider
             Destroy(balls[i].GetComponent<Collider>()); 

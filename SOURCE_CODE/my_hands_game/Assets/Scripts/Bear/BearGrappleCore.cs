@@ -140,8 +140,12 @@ public class BearGrappleCore : MonoBehaviour
     {
         GameObject ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         ball.name       = name;
-        ball.transform.localScale                    = Vector3.one * ballSize;
-        ball.GetComponent<Renderer>().material.color = color;
+        ball.transform.localScale   = Vector3.one * ballSize;
+        
+        Renderer ballRenderer       = ball.GetComponent<Renderer>();
+        ballRenderer.material       = new Material(Shader.Find("Sprites/Default"));
+        ballRenderer.material.color = color;
+        
         Destroy(ball.GetComponent<Collider>());
 
         return ball;
