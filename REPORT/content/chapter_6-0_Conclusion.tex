@@ -1,0 +1,163 @@
+% Chapter 6 - Conclusion and Future Work
+
+\section{Conclusion and Future Work}\label{sec:conclusion}
+
+This thesis set out from a single question, posed in \autoref{sec:introduction}:
+whether a hand-driven, interactive 3D application could be built from nothing more
+than a webcam and a commodity \acrshort{cpu}, with no headset, no depth camera, and
+no instrumented gloves. The preceding chapters answer it in the affirmative and in
+full, tracing a complete path from a single colour frame to four running interactive
+scenes. What follows draws that work together, sets out honestly the limits of what
+was achieved, and identifies the directions in which it could be carried further.
+
+\subsection{Summary of Contributions}\label{subsec:conclusion_summary}
+
+The central difficulty, identified in \autoref{subsec:gap}, was the gap between the
+raw output of a model-free landmark detector and the canonical pose representation an
+interactive application requires. MediaPipe \cite{zhang2020mediapipehands} recovers
+21 landmarks per hand at interactive rate on commodity hardware, but those landmarks
+are a flat list of points whose scale varies with camera distance, carry only
+wrist-relative depth, and encode neither a joint hierarchy nor anatomically valid
+ranges of motion~(\autoref{subsubsec:model-free}). The \acrshort{mano} model
+\cite{MANO:SIGGRAPHASIA:2017} supplies exactly the missing structure --- a fixed
+kinematic tree of joint rotations, independent of hand size and camera
+distance~(\autoref{subsec:mano}) --- and bridging the two was the work of the thesis.
+
+The bridge is the analytical AIK solver of \autoref{subsec:aik}, examined against the
+four families of inverse-kinematics method surveyed in \autoref{subsec:sota_ik}.
+Because the 21-landmark case is fully observed, the pose can be recovered in closed
+form: a single \acrshort{svd}-based point-set alignment for the global orientation,
+followed by one swing-only traversal of the kinematic tree~(\autoref{subsec:ik_impl}).
+The result, as \autoref{subsubsec:sota_ik_summary} argues, is the only surveyed
+approach that is simultaneously data-free, deterministic in per-frame cost, and
+runnable on \acrshort{cpu} --- the qualities the deployment setting demands.
+
+Around that solver, \autoref{sec:pipeline} described the Python pipeline that turns
+each frame into a smoothed, scale-normalised pose: metric landmark extraction with
+adaptive 1\euro{} smoothing~(\autoref{subsec:landmark_smoothing}), the \acrshort{mano}
+forward model used for the rest-pose template and local
+visualisation~(\autoref{subsec:forward_model}), and a \acrshort{udp} streaming layer
+that serialises the solved rotations, a gesture label, and a placement anchor as a
+\acrshort{json} datagram~(\autoref{subsec:streaming}). \autoref{sec:application} then
+described the Unity application that consumes the stream: a receiver that reverses the
+serialisation step for step~(\autoref{subsec:receiver}), a shared interaction layer
+providing one gesture vocabulary, one body-anchored menu, and one pointing
+component~(\autoref{subsec:interaction_layer}), and four scenes that put the same pose
+to markedly different uses --- a companion-and-grappling bear, a vertex-by-vertex face
+deformer, an editable city, and a painting tool whose drawings leave the application
+as point clouds for the surface reconstruction of \autoref{subsec:nksr}.
+
+That this pipeline is not merely functional but responsive is the quantitative
+contribution of the work. The latency evaluation of \autoref{subsec:latency_eval}
+measured a mean end-to-end software latency of \SI{30.68}{\ms} over \num{20234}
+frames, with a 99th percentile of \SI{40}{\ms} --- comfortably below the \SI{50}{\ms}
+perceptibility threshold identified in \autoref{subsec:one_euro_filter}, and achieved
+on a laptop \acrshort{cpu} with no \acrshort{gpu} involvement at any stage. The
+recurring observation across all four scenes, framed throughout against the state of
+the art~(\autoref{subsec:sota_interaction}), is therefore that each interaction is of
+a kind that comparable systems deliver only with a dedicated peripheral, a
+head-mounted display, or a controller, and each is achieved here from a single webcam.
+
+\subsection{Limitations}\label{subsec:conclusion_limitations}
+
+The system's strengths follow directly from a set of deliberate trade-offs, and those
+trade-offs are equally the source of its limitations. The most consequential is one of
+evaluation rather than design: the recovered pose was validated for latency but not
+for accuracy. No benchmark figure quantifies how closely the streamed \acrshort{mano}
+rotations reproduce ground-truth hand pose, and the system's correctness rests instead
+on the geometric guarantees of the closed-form solver and on visual inspection of the
+rendered avatars. This is the natural complement to the latency result and its most
+obvious omission.
+
+A second limitation is structural to the solver. AIK sets the twist component of every
+finger joint to zero~(\autoref{subsec:aik}), a simplification that is physiologically
+well grounded but that discards exactly the degree of freedom a learned method such as
+HybrIK-X \cite{li2023hybrikx} is able to recover from image
+features~(\autoref{subsubsec:sota_ik_neural}). For most finger articulation this loss
+is negligible, but for poses in which axial rotation carries genuine information ---
+thumb opposition above all --- the closed-form path cannot represent what it does not
+solve for. As \autoref{subsubsec:sota_ik_summary} put it, HybrIK-X defines the accuracy
+ceiling this system does not reach, while AIK defines the latency and hardware floor
+within which it operates.
+
+The reliance on a single RGB camera imposes its own limits. Depth is not measured but
+inferred: the placement anchor combines the wrist's image-space position with a
+bone-length-ratio depth cue~(\autoref{subsec:landmark_smoothing}), an estimate adequate
+for plausible placement but not for metric reconstruction, and far short of the spatial
+precision and tracking volume that the dedicated rigs of \autoref{subsubsec:sota_creative}
+provide. A single viewpoint also offers no recourse when a hand leaves the frame or
+turns away from the camera, and self-occlusion of the fingers degrades the landmarks
+before the solver ever sees them. The grace windows of \autoref{subsec:interaction_layer}
+absorb brief detector dropouts, but they are a tolerance, not a recovery mechanism.
+
+Finally, the interaction layer is bounded by the detector it builds on. The application
+draws on five discrete gestures from MediaPipe's recogniser~(\autoref{subsec:interaction_layer})
+and tracks at most two hands; richer or user-defined gestures, and continuous rather
+than discrete control signals, lie outside the present vocabulary.
+
+\subsection{Directions for Future Work}\label{subsec:conclusion_future}
+
+Each of these limitations suggests a corresponding line of further work, and they are
+set out here in the same pipeline order the thesis has followed throughout.
+
+The most immediate is the quantitative evaluation the present work lacks. Benchmarking
+the recovered pose against established datasets such as FreiHAND or HO-3D, on which the
+regressors of \autoref{subsubsec:model-based} report their accuracy, would place this
+system on the same footing as the methods it is compared against and quantify the cost
+of the zero-twist simplification directly. A controlled user study of the four
+interactions would complement that geometric measure with evidence on the experience
+itself.
+
+At the estimation layer, the clearest opportunity is to narrow the accuracy gap without
+surrendering the deployment target. A lightweight learned twist head, in the spirit of
+HybrIK \cite{li2022hybrik}, could augment the closed-form swing with the one component
+geometry alone cannot determine, running only when a \acrshort{gpu} is available and
+falling back to pure AIK otherwise --- preserving the \acrshort{cpu}-only floor while
+reaching toward the learned ceiling. Fusing a second camera or an optional depth sensor
+would in turn restore the metric scale the monocular anchor can only approximate, for
+users willing to add that hardware.
+
+The model itself admits two refinements. Per-user shape estimation, which the present
+pipeline fixes rather than solves, would fit the \acrshort{mano} template to the
+individual hand and improve the proportions the solver normalises
+against~(\autoref{subsec:mesh_recon}). More visibly, the Unity avatar is driven as a
+skinned armature and so renders under plain linear blend skinning, without the
+corrective pose blend shapes that \acrshort{mano} learns in order to suppress joint
+collapse~(\autoref{subsec:mano}). Carrying the full \acrshort{mano} mesh and its pose
+blend-shape term~(\autoref{eq:mano_bp}) through to the renderer would bring the finger
+deformation of the displayed hand up to the fidelity the model is capable of.
+
+Robustness is the natural next concern. An occlusion-aware front end along the lines of
+HandOccNet \cite{park2022handoccnet}, or a temporal model that interpolates across
+dropped frames rather than merely tolerating them, would extend reliable tracking into
+the partial-occlusion and out-of-frame conditions a single camera currently handles
+poorly.
+
+At the interaction layer, a custom or dynamic gesture vocabulary would lift the
+five-gesture limit, and the surface-reconstruction step that the painting tool feeds
+offline~(\autoref{subsec:scene_paint}) could be brought inside the application, so that
+a point cloud painted in front of the webcam is reconstructed into a mesh live by
+NKSR \cite{huang2023nksr} rather than exported for separate processing. Beyond the
+single machine, the loopback transport of \autoref{subsec:streaming} generalises
+naturally to a networked stream, opening remote or multi-user interaction over the same
+fire-and-forget channel.
+
+\subsection{Concluding Remarks}\label{subsec:conclusion_closing}
+
+The thread running through both the design and its limitations is a single trade, made
+deliberately and consistently: accuracy and tracking fidelity are given up in exchange
+for accessibility. The most capable systems surveyed in this thesis reach their
+precision by adding hardware --- a depth camera, a head-mounted display, an optical
+peripheral, a pair of controllers --- and in doing so raise the cost of entry to the
+very interactions they enable. The system built here takes the opposite position. It
+accepts the ceiling that a single RGB camera and a closed-form solver impose, and in
+return asks the user for nothing they do not already own.
+
+What the four scenes demonstrate, taken together, is that this floor is high enough to
+be useful. A character flown by the hands, a face pulled out of shape, a city
+rearranged in place, and a drawing lifted off the page into a reconstructed solid are
+not coarse cursor tasks but fine-grained, three-dimensional, two-handed interactions
+--- and they run, responsively, on the camera already built into a laptop. The
+accessibility this affords was the motivation with which the thesis
+opened~(\autoref{sec:introduction}); that it can be delivered at interactive latency,
+with no hardware beyond the commodity, is its conclusion.
