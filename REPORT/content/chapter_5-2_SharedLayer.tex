@@ -1,0 +1,62 @@
+\subsection{The Shared Interaction Layer}\label{subsec:interaction_layer}
+
+Every scene is built on the same foundation. A scene component reads the
+receiver's skeleton and gestures each frame and acts on them, and the gestures
+themselves are the discrete labels emitted by MediaPipe's
+recogniser~(\autoref{subsec:mediapipe}), of which the application uses five ---
+\texttt{Closed\_Fist}, \texttt{Pointing\_Up}, \texttt{Thumb\_Up},
+\texttt{Thumb\_Down}, and \texttt{Victory}. These form a small command set, reused
+consistently across navigation, menus, and direct manipulation, so that a gesture
+learned in one scene carries a familiar role in the next.
+
+Movement between scenes is itself gestural. \texttt{CircularSceneChanger} cycles
+the four scenes in a fixed order, and the two thumb gestures held in opposition
+advance or rewind the cycle: left \texttt{Thumb\_Down} with right \texttt{Thumb\_Up}
+moves forward, and the reverse combination moves back. A short cooldown guards
+against repeated triggering, and because the timer is held in a static field it
+survives the scene reload, preventing the gesture that loaded a scene from
+immediately loading the next. The application is therefore navigated end to end
+without a pointer or a menu button.
+
+A second mechanism recurs wherever a gesture must be held over time. The detector
+occasionally drops a gesture for a frame or two, re-triggering the palm stage when
+its confidence falls~(\autoref{subsec:mediapipe}); taken literally, a held grip
+would flicker. Each grasp-based interaction therefore tolerates a brief lapse:
+once a \texttt{Closed\_Fist} is lost, a short release timer must elapse before the
+grip is actually let go, so a momentary dropout is treated as continued holding.
+The same short-delay pattern appears in the face deformer, the grappling bear, and
+the omni-directional movement controller, and is described once here rather than
+repeated in each.
+
+Scenes that offer several modes select between them through a body-anchored menu
+rather than a screen overlay. \texttt{BraceletMenuCore} renders a wristband that
+snaps to the right wrist each frame, encircled by three option spheres. A
+right-hand \texttt{Victory} toggles the menu into view; the user then rotates the
+wrist until the desired option rises to the top, where the highest sphere drops
+beneath the band, enlarges, and shows a floating label. Selection is the left
+hand's \texttt{Thumb\_Up}, and both hands' \texttt{Thumb\_Down} resets to the
+default. Colour marks state --- one tint for an idle option, another for the one
+currently hovered, a third for the mode actually running. The menu is diegetic: it
+lives on the hand, requires no controller and no two-dimensional interface, and
+reuses the same gestures as everything else. The base class provides this
+behaviour and leaves the binding of options to actions to a per-scene subclass, so
+that the city and painting scenes share one menu mechanism with different contents.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/bracelet_menu.png}
+	\caption{The wrist bracelet menu, with the hovered option
+	         raised below the band and labelled.}
+	\label{fig:bracelet-menu}
+\end{figure}
+
+Pointing at the world is also shared. \texttt{HandPointer} casts a ray and reports
+what it strikes, in either of two aiming styles chosen by a right-hand gesture. In
+the pointing style the ray leaves the index fingertip along the finger's direction;
+in the palm style it leaves the centre of the palm along the palm's normal, the
+latter computed as the cross product of the vectors from the wrist to the index and
+little-finger knuckles. A beam and a marker show the aim, and a left-hand
+\texttt{Victory} signals confirmation. The companion bear and the city's building
+editor both build on this one component, reading its hit point and its confirmation
+state rather than deriving a ray of their own.

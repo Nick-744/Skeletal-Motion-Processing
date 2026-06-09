@@ -1,0 +1,72 @@
+\subsection{Receiving and Decoding the Pose Stream}\label{subsec:receiver}
+
+\texttt{ManoLiveReceiver} is the counterpart of \texttt{mano\_unity\_streamer}
+(\autoref{subsec:streaming}) and reverses each of its steps. On start it opens a
+receiver on the same port \texttt{5052} and runs the receive loop on a dedicated
+background thread. Each arriving datagram is decoded from UTF-8 and stored as the
+latest message under a lock, so the socket never blocks the main thread. This
+mirrors the decoupling used on the capture side~(\autoref{subsec:hand_tracking}):
+just as the Python tracker reads whatever detection is currently available rather
+than waiting on the detector, the Unity main loop acts on whatever datagram has
+most recently arrived. Because each pose supersedes the last, only the newest
+message is retained; a datagram that arrives while the previous one is still
+unread is simply overwritten, which is the intended behaviour for the
+fire-and-forget stream of~\autoref{subsec:udp}.
+
+Once per frame, \texttt{Update} takes the buffered message under the lock, clears
+it, and deserialises it with \texttt{Newtonsoft.Json} into a payload whose fields
+mirror the datagram schema of~\autoref{fig:udp-schema}.
+Any field whose hand was absent in that frame is null and is skipped.
+
+The rotations are decoded by \texttt{ApplyPose}, which inverts the axis-angle
+encoding produced upstream~(\autoref{subsec:mesh_recon}). Each of the sixteen
+rotations is a vector whose direction is the axis of rotation and whose magnitude
+is the angle in radians; the method recovers the angle as the vector's length and
+the axis as its normalisation, and reconstructs the rotation through Unity's
+\texttt{Quaternion.AngleAxis}. The sixteen quaternions are written as local
+rotations onto a sixteen-joint armature ordered as the wrist followed by the three
+joints of each finger --- the \acrshort{mano} joint convention
+of~\autoref{subsec:anatomy}. The first rotation is the global orientation of the
+wrist; the remaining fifteen are the per-finger joint rotations, exactly the
+decomposition the solver emitted into \acrshort{mano} pose-vector
+order~(\autoref{subsec:ik_impl}).
+
+Placement is handled separately by \texttt{ApplyAnchor}. The world-landmark
+skeleton is wrist-relative and so carries no information about camera distance,
+which is why the streamer supplies a separate anchor combining the wrist's
+image-space position with a monocular depth estimate~(\autoref{subsec:landmark_smoothing}).
+The receiver scales this anchor into scene units and inverts one axis to match
+Unity's left-handed coordinate frame, then writes it to the position of the
+armature root. Rotation and position are therefore restored independently: the
+joint rotations pose the fingers, while the anchor places the whole hand where it
+sits relative to the camera.
+
+One mapping inside the receiver is deliberately crossed. The capture loop mirrors
+each frame horizontally to present a selfie-style view~(\autoref{subsec:streaming}),
+which leaves the detector's left and right handedness labels reflected with respect
+to the user's actual hands. The receiver compensates by routing the payload's
+right-hand pose, gesture, and anchor to its left-hand avatar, and the left-hand
+fields to its right-hand avatar.
+
+The receiver is also the point at which end-to-end latency is measured. Each
+frame, it subtracts the datagram's send timestamp from the current time to obtain
+the software latency of that frame, and, when logging is enabled, appends the
+value to a CSV file over a fixed window. This is the instrument behind the headline
+timing result of this thesis~(\autoref{subsec:contributions}). For the present
+chapter the receiver's role is complete once it has produced, every frame, two
+posed and placed hand skeletons together with their gesture labels.
+
+Beyond decoding, the receiver exposes precisely what every scene consumes: the two
+bone arrays, the two armature roots, and the current gesture for each hand. It also
+holds references to the two hand meshes, so that they can be hidden when the hands
+are driving an avatar rather than appearing as themselves. No interaction logic
+lives here; that is the subject of the remaining sections.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/unity_live_hands.png}
+	\caption{The two \acrshort{mano} hand meshes in Unity,
+	         posed and placed live from the decoded stream.}
+	\label{fig:unity-hands}
+\end{figure}

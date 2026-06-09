@@ -9,8 +9,8 @@ public class CircularSceneChanger : MonoBehaviour
     [Header("Scene Cycle (In Order)")]
     public string[] sceneCycle = new string[] 
     {
-        "SampleScene",
-        "Mario_N64Test",
+        "GrapplingBear",
+        "Mario_N64",
         "City_Sandbox",
         "Mano_Paint_3D"
     };

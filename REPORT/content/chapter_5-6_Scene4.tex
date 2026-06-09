@@ -1,0 +1,78 @@
+\subsection{Scene IV --- The Painting Tool}\label{subsec:scene_paint}
+
+The fourth scene, \texttt{Mano\_Paint\_3D}, is the creative application
+(\autoref{subsubsec:sota_creative}). \texttt{LaserPainter} casts a
+ray from the index fingertip onto a flat surface --- referred to
+throughout as the paper --- and projects the strike onto
+the plane of that surface, clamped to its edges. Holding \texttt{Pointing\_Up}
+while aimed at the paper lays down ink: the strike point is smoothed to suppress
+tracking jitter and lifted a fraction above the surface, and a stroke is grown as a
+line whose points are added only once the hand has moved far enough to warrant a new
+one. A beam from finger to paper is shown at all times, so the user always sees
+where a stroke would begin.
+
+The painting menu, \texttt{BraceletMenuPaint}, offers three controls that are not
+all alike. Erase is a mode: it switches the same fingertip from depositing ink to
+removing any stroke it passes within a small radius. Save and the lathe toggle are
+momentary actions rather than modes, performed once on selection and leaving the
+painting state unchanged. The default, with no option active, is to paint.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/scene_paint_paper.png}
+	\caption{Drawing on the paper plane
+	         with the fingertip laser.}
+	\label{fig:paint-paper}
+\end{figure}
+
+Erasing is paired with history. Every drawn and erased stroke is pushed onto an undo
+stack, and while erase mode is active the right hand's \texttt{Thumb\_Down} and
+\texttt{Thumb\_Up} walk backward and forward through that history, restoring or
+removing strokes in turn, with brief on-screen feedback near the wrist. A new stroke
+clears the redo branch, as expected of a linear undo history.
+
+The tool is not confined to the plane. \texttt{PainterTraversal}, entered by both
+hands' \texttt{Thumb\_Down}, attaches the paper to the player rig and makes it
+translucent, then lets the user fly around the strokes already laid down --- both
+fists rotating the view in ninety-degree steps, a single fist translating it --- so
+that a drawing built up over several viewpoints accumulates into a three-dimensional
+form rather than a flat image. A second departure from the plane is the lathe.
+Toggling it shrinks the paper to half its width, shifts it aside, and draws an axis
+along its new edge; a profile drawn against that axis is treated as the silhouette
+of a solid of revolution. The two off-plane modes are mutually exclusive, the lathe
+being disabled whenever the three-dimensional mode is entered.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/scene_paint_lathe.png}
+	\caption{Lathe mode: a pawn profile drawn against the
+	         rotation axis along the paper's edge.}
+	\label{fig:paint-lathe}
+\end{figure}
+
+Saving writes the drawing out in a form that depends on how it was made. A plain
+two-dimensional drawing is rendered to an image through a temporary orthographic
+camera. A three-dimensional drawing is exported as a point cloud, the vertices of
+all its strokes written to a PLY file. A lathe profile is first revolved: each
+stroke is copied around the axis in many angular steps to sweep out the surface of
+the solid it describes, and the resulting points are written as a point cloud in the
+same format. The export carries positions only; the per-point normals that surface
+reconstruction requires are estimated downstream, exactly as~\autoref{subsec:nksr}
+describes for both the Poisson baseline and NKSR.
+
+The exported point cloud then feeds the surface-reconstruction
+stage of~\autoref{subsec:nksr}: the three-dimensional and revolved drawings are
+exactly the discrete, unstructured samples that PSR and NKSR turn into a mesh,
+completing a path from a hand drawn in front of a webcam to a reconstructed
+three-dimensional object.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/scene_paint_reconstruction.png}
+	\caption{A mesh reconstructed from a point cloud
+	         exported by the painting tool.}
+	\label{fig:paint-reconstruction}
+\end{figure}

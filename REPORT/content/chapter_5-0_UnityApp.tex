@@ -1,0 +1,30 @@
+% Chapter 5 - The Interactive Unity Application
+
+\section{The Interactive Unity Application}\label{sec:application}
+
+The pipeline of the previous chapter ends at a socket. For every frame in
+which at least one hand is visible, the streamer sends a \acrshort{json}
+datagram to the loopback address on port \texttt{5052}, carrying a timestamp
+and, for each hand, the sixteen axis-angle joint rotations, a gesture label,
+and a placement anchor~(\autoref{subsec:streaming},~\autoref{fig:udp-schema}).
+This chapter begins where that datagram arrives. It describes the Unity
+application that consumes the stream: the receiver that decodes it into a live
+skeleton, the interaction layer that every scene reads from, and the four
+scenes that put the recovered pose to different uses.
+
+The presentation moves outward from the stream. The receiver is treated first,
+as the exact inverse of the serialisation step that closed the pipeline. The
+shared interaction layer follows, since the gesture vocabulary, the scene
+navigation, and the body-anchored menu it provides recur across every scene and
+are best described once. The four scenes are then taken in turn. Each is
+examined not only as a mechanism but against the state of the
+art~(\autoref{subsec:sota_interaction}): the question throughout is what input
+hardware a comparable system would demand, and what the present scene achieves
+without it.
+
+A single architectural principle organises the whole application. The receiver
+is the only component that touches the network, and it performs no interaction
+logic of its own. Every scene component holds a reference to it and reads the
+current skeleton, gesture, and anchor each frame. The reconstructed hand is thus
+a shared resource, polled by many independent consumers, and the scenes remain
+entirely decoupled from the transport beneath them.

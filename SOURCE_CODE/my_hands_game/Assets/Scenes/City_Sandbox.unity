@@ -5226,6 +5226,14 @@ PrefabInstance:
       propertyPath: manoReceiver
       value: 
       objectReference: {fileID: 2123913870}
+    - target: {fileID: 6249039557628443890, guid: cb892527539eba848a66869cc2b97e39, type: 3}
+      propertyPath: 'sceneCycle.Array.data[0]'
+      value: GrapplingBear
+      objectReference: {fileID: 0}
+    - target: {fileID: 6249039557628443890, guid: cb892527539eba848a66869cc2b97e39, type: 3}
+      propertyPath: 'sceneCycle.Array.data[1]'
+      value: Mario_N64
+      objectReference: {fileID: 0}
     - target: {fileID: 6425160440351471643, guid: cb892527539eba848a66869cc2b97e39, type: 3}
       propertyPath: m_Name
       value: GestureSceneChanger

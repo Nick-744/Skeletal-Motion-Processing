@@ -1,0 +1,68 @@
+\subsection{Scene I --- The Companion and Grappling Bear}\label{subsec:scene_bear}
+
+The first scene, \texttt{GrapplingBear}, places a single character --- a bear ---
+under two distinct control regimes. \texttt{GameManager} holds a global grappling
+flag, toggled by both hands' \texttt{Thumb\_Down}, and broadcasts it each frame to
+every component that must respond. With the flag clear the bear is a
+\emph{companion} that reacts to the user; with it set the bear becomes an
+\emph{avatar} the user pilots. The receiver hides the hand meshes whenever the
+flag is set, so the hands disappear the moment they take control of the bear.
+
+As a companion the bear does two things. A \texttt{Thumb\_Up} from either hand
+raises the bear's arm on the mirrored side and waves it, with a slight head tilt
+and a dialogue bubble, handled by \texttt{BearInteraction}. Pointing at the ground
+and confirming with the left hand's \texttt{Victory}, through the shared
+\texttt{HandPointer}, sends the bear walking to that point. Throughout,
+\texttt{CameraRingController} in its ring mode lets the user
+orbit the scene by holding \texttt{Pointing\_Up} on one hand and \texttt{Closed\_Fist}
+on the other, the camera tracing a circle about a fixed centre while preserving its
+tilt.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/scene_bear_companion.png}
+	\caption{The companion bear waving back at the user
+	         in response to a \texttt{Thumb\_Up}.}
+	\label{fig:bear-companion}
+\end{figure}
+
+With the grappling flag set, the same bear is flown by the hands directly. Each
+hand drives a virtual aim point offset from a centre fixed to the bear and scaled
+from the hand's tracked position, and the bear's arms turn to follow these points.
+A sphere cast along each arm's aim direction, thickened to forgive imprecise
+pointing, reports whether a graspable surface lies ahead; closing that hand into a
+\texttt{Closed\_Fist} on a valid target shoots a rope and attaches a spring joint
+between the bear and the struck point. The joint, tuned with a stiff spring and
+heavy damping and a rest length shorter than the initial throw, pulls the bear in
+and lets it swing, with the bear's forward direction locked toward the anchor for
+the duration. Releasing the fist detaches the rope, subject to the brief grace
+window of~\autoref{subsec:interaction_layer}.
+
+The two hands divide the labour of grappling and looking. When one hand holds a
+rope the other is free, and \texttt{CameraRingController} switches to a third-person
+view that the free hand steers: its tracked position turns the camera's yaw about
+the bear, and the view is aimed at the point the free hand is itself pointing at.
+One hand thus commits the bear to a swing while the other chooses where to look and
+where to throw next.
+
+A collision routine in the shared grapple core classifies each impact by comparing
+its direction against the bear's own forward, right, and up axes, and, when an
+optional haptic vest is connected, fires the motor bank on the corresponding side
+of the torso. The vest is strictly an enhancement. The interaction itself needs
+only the webcam pipeline that defines this thesis~(\autoref{subsec:gap}); the
+haptic feedback, when present, adds a felt response to collisions in this one scene
+and nothing more. Taken whole, the scene answers the games question
+of~\autoref{subsubsec:sota_immersive}.
+The two-handed grapple-and-swing it demonstrates is the kind of
+hand-driven control shipped in immersive titles --- the same control
+here, however, is driven from a single webcam.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/scene_bear_grapple.png}
+	\caption{Grappling mode: one hand holds a rope while the
+	         free hand steers the third-person camera.}
+	\label{fig:bear-grapple}
+\end{figure}

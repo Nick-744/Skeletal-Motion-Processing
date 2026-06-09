@@ -1,0 +1,60 @@
+\subsection{Scene III --- The Editable City}\label{subsec:scene_city}
+
+The third scene, \texttt{City\_Sandbox}, is a sandbox in which the user moves
+through a city, rearranges it, and traverses it as an avatar, choosing between
+these through the wrist menu of~\autoref{subsec:interaction_layer}.
+\texttt{BraceletMenuCity} binds the three menu options --- traverse, move, and
+grappling --- and falls back to a plain orbiting camera when none is active.
+
+The traverse mode turns the hands into a flight stick. \texttt{CameraRingController}
+reads both hands: with both closed into fists the player rig rotates --- yaw from
+the angle of the line joining the hands, pitch from the vertical position of their
+midpoint, roll from the line's tilt --- and with a single fist it translates through
+the scene. Deadzones on each axis absorb small tracking movements, so the view holds
+steady when the user means it to.
+
+The move mode enables the shared pointer together with \texttt{BuildingGrabber}.
+Confirming with \texttt{Victory} on a building picks it up; it then follows the hand,
+in whichever of the pointer's two styles is active --- tracking the palm directly,
+or carried by the displacement of the laser's hit point --- with its height held
+fixed so it slides across the ground plane rather than lifting off. The motion is
+smoothed, and releasing the confirmation sets the building down.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.85\linewidth, frame]{img/scene_city_move.png}
+	\caption{A building selected and repositioned
+	         across the ground plane in move mode.}
+	\label{fig:city-move}
+\end{figure}
+
+The grappling mode equips the same bear character with omni-directional mobility
+gear, and is built on the grapple core of Scene~I through a separate subclass,
+\texttt{BearODMController}. Where the first scene threw one rope at a time, this
+mode fires two together on both fists and winches the avatar toward the wall by
+steadily shortening the ropes. Once both are anchored it tracks the avatar against
+the wall, and when the swing carries it past, both hooks release with a forward
+launch and time slows to a fraction of real speed for an aerial moment in which a
+\texttt{Pointing\_Up} on either hand steers the body; a new throw is withheld until
+the hands open again. The shared base supplies the ropes, the aim assist, and the
+collision haptics, while the subclass supplies only the dual-hook winching, the
+launch, and the slow-motion steering --- an arrangement that lets two quite
+different traversal idioms reuse one body of grappling code.
+
+This scene builds on Scene~I in two ways. First, it introduces a richer set of
+hand-driven movements: paired grapples, winching, and a mid-air-steered launch,
+all controlled by the single webcam
+that~\autoref{subsubsec:sota_immersive} compares against motion controllers and
+headset rigs. Second, objects in the scene can be picked up and repositioned
+directly with the hands --- the same controller-free manipulation demonstrated in
+the deformer, but applied to whole objects rather than individual mesh vertices.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.8\linewidth, frame]{img/scene_city_odm.png}
+	\caption{Omni-directional mobility: the avatar winches
+	         toward a wall on twin ropes.}
+	\label{fig:city-odm}
+\end{figure}

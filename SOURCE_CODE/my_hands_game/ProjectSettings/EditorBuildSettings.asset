@@ -6,10 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
+    path: Assets/Scenes/GrapplingBear.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/Scenes/Mario_N64Test.unity
+    path: Assets/Scenes/Mario_N64.unity
     guid: 9603cd5b2d997424ea213fd3906017f4
   - enabled: 1
     path: Assets/Scenes/City_Sandbox.unity

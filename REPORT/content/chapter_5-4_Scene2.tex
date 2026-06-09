@@ -1,0 +1,45 @@
+\subsection{Scene II --- The Deformable Face}\label{subsec:scene_face}
+
+The second scene, \texttt{Mario\_N64}, is the simplest in conception and the
+most direct test of spatial precision. It recreates the grab-and-stretch
+interactive face familiar from an early game console as a hand-tracking exercise:
+a head mesh that the user pulls and distorts with the hands. \texttt{FaceDeformer}
+works on a private copy of the mesh, so the shared asset is never altered, and
+maintains for every vertex a rest position, a current position, a velocity, and a
+per-frame target.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.9\linewidth, frame]{img/scene_face_deformer.png}
+	\caption{The head mesh pulled out of shape
+	         by two independent grabs.}
+	\label{fig:face-deformer}
+\end{figure}
+
+A rendered mesh splits vertices at its seams, where a single physical point is
+represented by several entries carrying different texture coordinates; deforming
+such a mesh naively tears it along those seams. The component prevents this by
+grouping vertices that share a position into welded sets at start-up, running the
+physics on one representative per set, and copying the result to its duplicates.
+The visible surface stays continuous under arbitrarily large pulls.
+
+A grab begins when a hand closes near the surface. The nearest vertex becomes the
+grab centre, and a smooth, Gaussian falloff assigns every other vertex a weight
+that decays with distance from it, so the pull is concentrated at the grasp and
+tapers across the surrounding region rather than dragging a single point. The two
+hands grab independently, each with its own centre and weights, so the face can be
+pulled in two places at once.
+
+While a grab is held, the target positions of the affected vertices follow the
+hand; between and after grabs, a mass-spring relation pulls every representative
+vertex back toward its rest position, the restoring force damped exponentially so
+the surface settles with an elastic wobble rather than snapping back. Normals and
+bounds are recomputed each frame so the lighting tracks the deformation.
+
+The user orbits the head through the same ring camera as the previous scene, and a
+small interlock suppresses grabbing while the ring is actively turning, so rotating
+the view cannot be mistaken for reaching into the mesh. Modest as it is, the scene
+makes a point that bears directly on~\autoref{subsubsec:sota_gesture}: the recovered
+pose is precise enough to pick out and drag an individual vertex continuously, in
+three dimensions, with either hand.

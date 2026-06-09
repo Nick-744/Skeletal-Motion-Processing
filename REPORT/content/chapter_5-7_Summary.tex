@@ -1,0 +1,21 @@
+\subsection{Summary}\label{subsec:application_summary}
+
+The Unity application closes the loop the pipeline opened. \texttt{ManoLiveReceiver}
+decodes the streamed datagram back into two posed and placed hand skeletons,
+reversing the serialisation of~\autoref{subsec:streaming} step for step, and exposes
+that skeleton as a shared resource. On top of it, one gesture vocabulary, one
+body-anchored menu, and one pointing component drive four scenes that use the hands
+in markedly different ways: a character that is by turns a companion and a grappling
+avatar, a mesh deformed vertex by vertex, a city flown through, rearranged, and
+traversed on grappling gear, and a painting tool whose drawings leave the
+application as point clouds for reconstruction.
+
+Across all four, the recurring observation is the one the state of the art
+frames~(\autoref{subsec:sota_interaction}): each interaction is of a kind that
+comparable systems deliver only with a peripheral, a head-mounted display, or a
+controller, and each is achieved here from a single webcam and a commodity
+\acrshort{cpu}, with the user holding and wearing nothing but, optionally, a haptic
+vest. What remains is to show that the loop is not merely closed but fast --- that
+the pose arrives quickly enough for these interactions to feel immediate.
+% That measurement, and its comparison against the threshold of perceptible lag,
+% is the subject of the evaluation chapter that follows.
