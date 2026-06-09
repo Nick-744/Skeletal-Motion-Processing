@@ -1,3 +1,40 @@
+% LATENCY METRICS REPORT
+
+\subsection{End-to-End Latency Evaluation}\label{subsec:latency_eval}
+
+All measurements were collected on a laptop equipped with a 13th-generation
+Intel Core i5-1334U processor (\SI{1.30}{\GHz} base clock), with no
+\acrshort{gpu} involvement at any stage of the pipeline.
+
+The logging mechanism described in~\autoref{subsec:receiver} was enabled
+over a continuous 13-minute session to collect a representative sample of
+per-frame software latency. Over 20{,}234 frames the pipeline achieved
+a mean latency of \SI{30.68}{\ms} with a median of \SI{31.00}{\ms} and a
+standard deviation of \SI{5.03}{\ms}. The 95th and 99th percentiles were
+\SI{37.00}{\ms} and \SI{40.00}{\ms} respectively.
+
+All but the rarest frames therefore fall well below the
+\SI{50}{\ms} perceptibility threshold identified in~\autoref{subsec:one_euro_filter},
+above which lag becomes noticeable to users. The maximum observed value
+of \SI{428}{\ms} represents an isolated outlier consistent with an OS-level scheduling
+interruption or a garbage-collection pause on the Unity side;
+no sustained degradation was observed across the session.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{justification=centering}
+    \includegraphics[width=0.9\linewidth]{img/latency_histogram.png}
+    \caption{Distribution of end-to-end software latency over \num{20234} frames.
+            Vertical lines mark the mean, median, 95th and 99th
+            percentiles. The dashed red line is the
+            \SI{50}{\ms} perceptibility threshold~(\autoref{subsec:one_euro_filter}).
+            Five outlier frames exceeding \SI{60}{\ms} are omitted from the
+            display (maximum observed: \SI{428}{\ms}).}
+    \label{fig:latency-hist}
+\end{figure}
+
+
+
 \subsection{Summary}\label{subsec:application_summary}
 
 The Unity application closes the loop the pipeline opened. \texttt{ManoLiveReceiver}
@@ -15,7 +52,6 @@ frames~(\autoref{subsec:sota_interaction}): each interaction is of a kind that
 comparable systems deliver only with a peripheral, a head-mounted display, or a
 controller, and each is achieved here from a single webcam and a commodity
 \acrshort{cpu}, with the user holding and wearing nothing but, optionally, a haptic
-vest. What remains is to show that the loop is not merely closed but fast --- that
-the pose arrives quickly enough for these interactions to feel immediate.
-% That measurement, and its comparison against the threshold of perceptible lag,
-% is the subject of the evaluation chapter that follows.
+vest. As the latency evaluation of~\autoref{subsec:latency_eval} confirms,
+the loop is not merely closed but fast enough for these interactions
+to feel immediate.

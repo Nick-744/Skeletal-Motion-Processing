@@ -21,13 +21,6 @@ pose leaves the mesh undeformed, and linear blend skinning combines the
 per-joint transforms, weighted by the skinning weights, to produce the final
 posed vertices.
 
-% One detail of the implementation is worth stating precisely against the
-% formulation in \autoref{subsec:mano}. Although the pose blend-shape basis
-% $B_P$~(\autoref{eq:mano_bp}) is loaded, it is not applied in \texttt{update}: the
-% runtime mesh is the shape-adjusted template deformed by skinning alone, and the
-% pose-corrective term that \acrshort{mano} adds to reduce joint-collapse artefacts
-% is omitted. The shape contribution $B_S$ of~\autoref{eq:mano_tp} is retained.
-
 Finally, the keypoints are read from the posed mesh through an extended joint
 regressor, which augments the standard regressor with five additional rows that
 each select a single fingertip mesh vertex. This yields the 21-keypoint layout
