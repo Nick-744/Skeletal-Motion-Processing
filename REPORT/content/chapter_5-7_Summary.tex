@@ -14,7 +14,7 @@ standard deviation of \SI{5.03}{\ms}. The 95th and 99th percentiles were
 \SI{37.00}{\ms} and \SI{40.00}{\ms} respectively.
 
 All but the rarest frames therefore fall well below the
-\SI{50}{\ms} perceptibility threshold identified in~\autoref{subsec:one_euro_filter},
+\SI{60}{\ms} perceptibility threshold identified in~\autoref{subsec:one_euro_filter},
 above which lag becomes noticeable to users. The maximum observed value
 of \SI{428}{\ms} represents an isolated outlier consistent with an OS-level scheduling
 interruption or a garbage-collection pause on the Unity side;
@@ -23,12 +23,12 @@ no sustained degradation was observed across the session.
 \begin{figure}[H]
     \centering
     \captionsetup{justification=centering}
-    \includegraphics[width=0.9\linewidth]{img/latency_histogram.png}
+    \includegraphics[width=0.9\linewidth]{img/latency_histogram.pdf}
     \caption{Distribution of software latency over \num{20234} frames.
             Vertical lines mark the mean, median, 95th and 99th
             percentiles. The dashed red line is the
-            \SI{50}{\ms} perceptibility threshold~(\autoref{subsec:one_euro_filter}).
-            Five outlier frames exceeding \SI{60}{\ms} are omitted from the
+            \SI{60}{\ms} perceptibility threshold~(\autoref{subsec:one_euro_filter}).
+            Four outlier frames exceeding \SI{70}{\ms} are omitted from the
             display (maximum observed: \SI{428}{\ms}).}
     \label{fig:latency-hist}
 \end{figure}
