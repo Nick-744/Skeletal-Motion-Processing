@@ -48,7 +48,7 @@ to the user's actual hands. The receiver compensates by routing the payload's
 right-hand pose, gesture, and anchor to its left-hand avatar, and the left-hand
 fields to its right-hand avatar.
 
-The receiver is also the point at which end-to-end latency is measured. Each
+The receiver is also the point at which software latency is measured. Each
 frame, it subtracts the datagram's send timestamp from the current time to obtain
 the software latency of that frame, and, when logging is enabled, appends the
 value to a CSV file over a fixed window. This is the instrument behind the headline
