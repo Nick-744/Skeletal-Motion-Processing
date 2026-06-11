@@ -1,10 +1,54 @@
 \begin{center}  \Large{\textbf{ABSTRACT}}  \end{center}
 \begin{center}  \Large{\textbf{DIPLOMA THESIS TITLE}}  \end{center}
 \vspace{3pt}
-\begin{center}  \large{\textbf{STUDENT NAME, SURNAME: \hspace{50pt} SUPERVISOR NAME, SURNAME:}}  \end{center}
+\begin{center}  \large{\textbf{Nikolaos Gerontas: \hspace{50pt} Konstantinos Moustakas:}}  \end{center}
 \vspace{10pt}
 \noindent
-The objectives, methods, procedures, experiments and results of the Diploma Thesis are briefly described.\\\\
+
+Hand-driven interaction with three-dimensional content is most often
+delivered through specialised hardware --- depth cameras, head-mounted
+displays, instrumented gloves, or hand-held controllers --- each of which
+raises the cost and effort of entry to the very interactions it enables.
+This thesis asks whether a hand-driven, interactive 3D application can
+instead be built from nothing more than a webcam and a commodity
+\acrshort{cpu}, with no headset, no depth sensor, and no instrumented gloves.
+
+The obstacle is one of representation. Google MediaPipe recovers 21
+landmarks per hand in real time on commodity hardware, but those landmarks
+are a flat list of points whose scale varies with camera distance, carry
+only wrist-relative depth, and encode neither a joint hierarchy nor
+anatomically valid ranges of motion. The \acrshort{mano} parametric hand
+model supplies the missing structure --- a fixed kinematic tree of joint
+rotations, independent of hand size and viewpoint --- and bridging the two
+is the central problem of the work.
+
+The bridge is an analytical inverse-kinematics solver that recovers the
+pose in closed form: a single \acrshort{svd}-based point-set alignment for
+the global orientation, followed by one swing-only traversal of the
+kinematic tree. The landmarks are first smoothed with a 1\euro{} filter,
+and the solved rotations, a detected gesture, and a placement anchor are
+serialised as a \acrshort{json} datagram and streamed over \acrshort{udp}
+to a Unity application. There, a shared interaction layer drives four scenes
+that put the same pose to markedly different uses: a companion-and-grappling
+bear, a vertex-by-vertex face deformer, an editable city, and a painting
+tool whose drawings leave the application as point clouds for surface
+reconstruction.
+
+The pipeline runs entirely on the \acrshort{cpu}, with no \acrshort{gpu}
+involvement at any stage. A latency evaluation over \num{20234} frames
+measured a mean software latency of \SI{30.68}{\ms}, with a 99th percentile
+of \SI{40}{\ms} --- comfortably below the \SI{60}{\ms} threshold above which
+lag becomes perceptible to users. The system thus embodies a deliberate
+trade of tracking accuracy for accessibility, delivering fine-grained,
+two-handed, three-dimensional interaction at interactive latency from the
+camera already built into a laptop.\\\\
+
 \noindent
 \vspace{0.3cm}
-\\ \textit{keywords} - \textbf{keyword 1, keyword 2, keyword 3, keyword 4, keyword 5} 
+\\ \textit{keywords} - \textbf{
+    monocular,
+    MediaPipe,
+    kinematics,
+    MANO,
+    Unity 3D
+}
