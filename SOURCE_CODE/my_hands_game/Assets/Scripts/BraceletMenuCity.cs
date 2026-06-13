@@ -12,11 +12,26 @@ public class BraceletMenuCity : BraceletMenuCore
     [Tooltip("GameObject holding the BearODMController.")]
     public BearODMController bearODMController;
 
+    [Tooltip("GameObject holding the PCDImporter.")]
+    public PCDImporter pcdImporter;
+    private bool hasPCDToImport = false;
+
     protected override void Start()
     {
-        menuNames = new string[] { "Traverse", "Move", "Bear Grappling" };
+        hasPCDToImport     = CheckForPCD();
+        string thirdOption = hasPCDToImport ? "Import PCD" : "Bear Grappling";
+
+        menuNames = new string[] { "Traverse", "Move", thirdOption };
         
         base.Start();
+    }
+
+    private bool CheckForPCD()
+    {
+        string desktopPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop);
+        string[] files     = System.IO.Directory.GetFiles(desktopPath, "*.ply");
+
+        return files.Length > 0;
     }
 
     protected override void ApplyCurrentMode()
@@ -44,6 +59,8 @@ public class BraceletMenuCity : BraceletMenuCore
                 bearODMController.bearRoot.gameObject.SetActive(false);
         }
 
+        if (pcdImporter != null) pcdImporter.StopImport();
+
         // Reset time...
         Time.timeScale      = 1f;
         Time.fixedDeltaTime = 0.02f;
@@ -67,17 +84,24 @@ public class BraceletMenuCity : BraceletMenuCore
                 break;
             
             case 2:
-                // Bear Grappling mode
-                if (cameraController != null) cameraController.isODMMode   = true;
-                if (manoReceiver     != null) manoReceiver.isGrapplingMode = true;
-
-                if (bearODMController != null)
+                if (hasPCDToImport)
                 {
-                    bearODMController.isODMMode = true;
-                    if (bearODMController.bearRoot != null)
-                        bearODMController.bearRoot.gameObject.SetActive(true);
+                    // Import PCD mode
+                    if (pcdImporter != null) pcdImporter.CheckAndStartImport();
                 }
+                else
+                {
+                    // Bear Grappling mode
+                    if (cameraController != null) cameraController.isODMMode   = true;
+                    if (manoReceiver     != null) manoReceiver.isGrapplingMode = true;
 
+                    if (bearODMController != null)
+                    {
+                        bearODMController.isODMMode = true;
+                        if (bearODMController.bearRoot != null)
+                            bearODMController.bearRoot.gameObject.SetActive(true);
+                    }
+                }
                 break;
         }
     }

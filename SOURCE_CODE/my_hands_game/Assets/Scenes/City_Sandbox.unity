@@ -2930,6 +2930,7 @@ MonoBehaviour:
   buildingGrabber: {fileID: 374962027}
   handPointer: {fileID: 374962028}
   bearODMController: {fileID: 758009042}
+  pcdImporter: {fileID: 1032435907}
 --- !u!1 &981343530 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -678909663146211545, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
@@ -3065,6 +3066,54 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -4073413364311605265, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
+--- !u!1 &1032435906
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1032435908}
+  - component: {fileID: 1032435907}
+  m_Layer: 0
+  m_Name: PCDImporter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1032435907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1032435906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5ebf410d29b9a74c8db086b1c0163cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PCDImporter
+  handPointer: {fileID: 374962028}
+  placementScale: 0.12
+  pointSize: 0.01
+  pointColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!4 &1032435908
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1032435906}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1044052713 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 983229589246498945, guid: cc5252b13b3cb324aba05c89dbc62367, type: 3}
@@ -5295,3 +5344,4 @@ SceneRoots:
   - {fileID: 758009033}
   - {fileID: 468436548}
   - {fileID: 7196374474193467794}
+  - {fileID: 1032435908}
