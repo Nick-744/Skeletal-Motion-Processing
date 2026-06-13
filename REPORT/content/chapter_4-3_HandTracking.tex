@@ -5,9 +5,7 @@ MediaPipe detector in a \texttt{HandTracker} class. The detector used is the
 MediaPipe \texttt{GestureRecognizer}, which embeds the hand-landmark model
 described in \autoref{subsec:mediapipe} and returns, from a single inference, both
 the 21 landmarks per hand and a gesture label. It is loaded from the bundled
-\texttt{gesture\_recognizer.task} asset and configured to track up to two hands,
-with the minimum hand-detection, hand-presence, and tracking-confidence
-thresholds all set to $0.8$.
+\texttt{gesture\_recognizer.task} asset and configured to track up to two hands.
 
 The recogniser runs in MediaPipe's live-stream mode, which is asynchronous. Each
 frame is submitted through \texttt{recognize\_async} together with a
