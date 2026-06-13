@@ -10,7 +10,7 @@ public class PCDImporter : MonoBehaviour
 
     [Header("Import Settings")]
     [Tooltip("Overall size of the imported cloud in the world.")]
-    public float placementScale = 0.12f;
+    public float placementScale = 0.1f;
     [Tooltip("Edge length of each point cube (local space).")]
     public float pointSize = 0.01f;
     [Tooltip("Colour of the imported points.")]

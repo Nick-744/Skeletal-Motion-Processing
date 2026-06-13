@@ -58,3 +58,46 @@ the deformer, but applied to whole objects rather than individual mesh vertices.
 	         toward a wall on twin ropes.}
 	\label{fig:city-odm}
 \end{figure}
+
+\subsubsection{Importing the Painted Cloud}\label{subsubsec:scene_city_pcd}
+
+The third menu slot is not fixed. When the desktop holds a point cloud left
+there by the painting tool~(\autoref{subsec:scene_paint}),
+\texttt{BraceletMenuCity} detects it as the scene loads and replaces the
+grappling option with an import mode, falling back to grappling only when no such
+file is present. The change is confined to a single entry: the wrist menu reads
+\texttt{Import PCD} in place of its third option, and nothing else in the scene
+is altered.
+
+Selecting it hands control to \texttt{PCDImporter}, which takes the most recently
+written PLY on the desktop and reads it for what it is --- a list of positions,
+the header skipped and three coordinates parsed from each line of the body. The
+points are recentred so that the bottom centre of their bounding box falls at the
+origin, and the shared pointer of~\autoref{subsec:interaction_layer} is switched
+on so the cloud can be aimed: while the laser rests on a surface the cloud is
+shown at the hit point and follows it as the hand moves, and it is hidden the
+moment the laser leaves a surface, so a placement is only ever previewed where it
+can actually be set down. The pointer's confirmation then fixes the cloud in
+place and turns the laser off.
+
+What separates this from the route the painting tool otherwise takes is that no
+surface is reconstructed. \autoref{subsec:scene_paint} writes the drawing out for
+the reconstruction stage of~\autoref{subsec:nksr}, where per-point normals are
+estimated and a mesh is fitted by NKSR --- a step that leans on the GPU.
+The city takes the opposite route and keeps the cloud as a cloud: each point is
+drawn as a small unlit cube, the whole set is gathered into one mesh backed by a
+thirty-two-bit index buffer so that dense clouds are not capped at the usual
+vertex limit, and nothing further is computed. The drawing is therefore present
+inside the interactive scene at once, set down by hand onto a rooftop or a street,
+with no reconstruction and so with no GPU --- carrying the monocular, CPU-only
+premise of the thesis across the seam between two scenes, from a stroke drawn in
+front of a webcam to a point cloud standing in the city.
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[width=0.85\linewidth, frame]{img/scene_city_pcd.png}
+	\caption{A drawing exported as a point cloud, re-imported into the city
+	         and placed on a rooftop as raw points, without reconstruction.}
+	\label{fig:city-pcd}
+\end{figure}
