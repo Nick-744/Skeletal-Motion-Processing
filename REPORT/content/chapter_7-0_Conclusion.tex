@@ -31,6 +31,11 @@ followed by one swing-only traversal of the kinematic tree~(\autoref{subsec:ik_i
 The result, as \autoref{subsubsec:sota_ik_summary} argues, is the only surveyed
 approach that is simultaneously data-free, deterministic in per-frame cost, and
 runnable on \acrshort{cpu} --- the qualities the deployment setting demands.
+Pairing that solver with the model-free detector is, as~\autoref{subsec:sota_positioning}
+sets out, the specific combination the survey leaves open: the contribution is not a new
+algorithm but the assembly of existing components into a system that recovers a
+canonical \acrshort{mano} pose at interactive rate on \acrshort{cpu}, and the
+demonstration that it suffices.
 
 Around that solver, \autoref{sec:pipeline} described the Python pipeline that turns
 each frame into a smoothed, scale-normalised pose: metric landmark extraction with
@@ -48,11 +53,22 @@ deformer, an editable city, and a painting tool whose drawings leave the applica
 as point clouds for the surface reconstruction of \autoref{subsec:nksr}.
 
 That this pipeline is not merely functional but responsive is the quantitative
-contribution of the work. The latency evaluation of \autoref{subsec:latency_eval}
+contribution of the work, and the three measurements of~\autoref{sec:evaluation}
+converge on it~(\autoref{subsec:eval_discussion}). The latency evaluation
+of~\autoref{subsec:latency_eval}
 measured a mean software latency of \SI{30.68}{\ms} over \num{20234}
 frames, with a 99th percentile of \SI{40}{\ms} --- comfortably below the \SI{60}{\ms}
 perceptibility threshold identified in \autoref{subsec:one_euro_filter}, and achieved
 on a laptop \acrshort{cpu} with no \acrshort{gpu} involvement at any stage. The
+per-stage decomposition of~\autoref{subsec:latency_breakdown}
+located that cost almost entirely in the analytical solve,
+which alone accounts for \SI{89.7}{\percent} of per-frame compute,
+with detection and filtering nearly free by comparison --- so that the system's
+responsiveness rests on a single, well-understood stage. The resource profile
+of~\autoref{subsec:hardware_util} confirmed the cost is also modest: the streamer and
+the Unity application together draw only about a third of the machine's processor and
+hold a flat memory footprint, leaving on average more than \SI{40}{\percent} of a
+commodity \acrshort{cpu} idle. The
 recurring observation across all four scenes, framed throughout against the state of
 the art~(\autoref{subsec:sota_interaction}), is therefore that each interaction is of
 a kind that comparable systems deliver only with a dedicated peripheral, a
@@ -62,8 +78,9 @@ head-mounted display, or a controller, and each is achieved here from a single w
 
 The system's strengths follow directly from a set of deliberate trade-offs, and those
 trade-offs are equally the source of its limitations. The most consequential is one of
-evaluation rather than design: the recovered pose was validated for latency but not
-for accuracy. No benchmark figure quantifies how closely the streamed \acrshort{mano}
+evaluation rather than design: the system was characterised for the latency and the cost
+of the pose it delivers~(\autoref{sec:evaluation}), but the accuracy of that pose was
+never validated. No benchmark figure quantifies how closely the streamed \acrshort{mano}
 rotations reproduce ground-truth hand pose, and the system's correctness rests instead
 on the geometric guarantees of the closed-form solver and on visual inspection of the
 rendered avatars. This is the natural complement to the latency result and its most
@@ -100,12 +117,13 @@ than discrete control signals, lie outside the present vocabulary.
 Each of these limitations suggests a corresponding line of further work, and they are
 set out here in the same pipeline order the thesis has followed throughout.
 
-The most immediate is the quantitative evaluation the present work lacks. Benchmarking
+The most immediate is the accuracy evaluation that the performance study
+of~\autoref{sec:evaluation} did not attempt. Benchmarking
 the recovered pose against established datasets such as FreiHAND or HO-3D, on which the
 regressors of \autoref{subsubsec:model-based} report their accuracy, would place this
 system on the same footing as the methods it is compared against and quantify the cost
 of the zero-twist simplification directly. A controlled user study of the four
-interactions would complement that geometric measure with evidence on the experience
+interactions would complement those objective measures with evidence on the experience
 itself.
 
 At the estimation layer, the clearest opportunity is to narrow the accuracy gap without
@@ -113,7 +131,11 @@ surrendering the deployment target. A lightweight learned twist head, in the spi
 HybrIK \cite{li2022hybrik}, could augment the closed-form swing with the one component
 geometry alone cannot determine, running only when a \acrshort{gpu} is available and
 falling back to pure AIK otherwise --- preserving the \acrshort{cpu}-only floor while
-reaching toward the learned ceiling. Fusing a second camera or an optional depth sensor
+reaching toward the learned ceiling. Any such addition, like any later effort to cut
+latency or to track more than the present two hands, would fall on the analytical solve,
+which the decomposition of~\autoref{subsec:latency_breakdown} identified as nearly the
+whole of per-frame compute and thus the only stage where such work would tell.
+Fusing a second camera or an optional depth sensor
 would in turn restore the metric scale the monocular anchor can only approximate, for
 users willing to add that hardware.
 
