@@ -1,0 +1,107 @@
+\subsection{Positioning the Present Work}\label{subsec:sota_positioning}
+
+The four preceding subsections each judged a body of prior work against the
+three constraints of~\autoref{subsec:gap}: monocular RGB input, CPU-only
+real-time compute, and off-the-shelf hardware accessibility.
+Taken individually, several of the surveyed systems satisfy one or two of those
+constraints.
+Taken together, what emerges is that no single prior system satisfies all three
+at once while also producing the canonical pose an interactive avatar requires.
+This subsection draws those threads together and states precisely what occupying
+that operating point demands, and what the present work contributes by occupying
+it.
+The contribution claimed here is not a new algorithm --- the components are drawn
+from existing work --- but the specific combination that the survey leaves open,
+and the demonstration that it suffices.
+
+The clearest tension runs through the estimation
+literature~(\autoref{subsec:sota_estimation}).
+The model-free detectors --- MediaPipe~\cite{zhang2020mediapipehands} and the
+weakly-supervised regressor of Spurr et al.~\cite{spurr2020weakly} --- run at
+interactive rate on commodity hardware, but emit only a flat set of joint
+positions: no rotations, no kinematic hierarchy, and no scale
+invariance~(\autoref{subsubsec:model-free}), and so cannot on their own drive a
+rigged skeleton.
+The model-based regressors --- Minimal-Hand~\cite{zhou2020monocular},
+HandOccNet~\cite{park2022handoccnet}, and HaMeR~\cite{pavlakos2024hamer} ---
+recover exactly the canonical \acrshort{mano} output that is missing, but reach
+it only on \acrshort{gpu}-class hardware where they report timing at all; two of
+the three report neither inference cost nor
+hardware~(\autoref{subsubsec:model-based}).
+MobRecon~\cite{chen2022mobrecon} is the one surveyed method to combine CPU-rate
+operation with accessible hardware, yet it does so by abandoning the parametric
+representation altogether: its directly predicted mesh vertices carry no joint
+rotations, and therefore cannot drive a skeleton without a separate
+pose-extraction stage~(\autoref{subsubsec:sota_hardware}).
+The parametric-model survey marks the same boundary from the other side ---
+\acrshort{mano} is adopted precisely because its lightweight forward pass meets
+the CPU constraint, where the anatomically richer NIMBLE~\cite{zhang2022nimble}
+does not~(\autoref{subsec:sota_parametric}).
+Across the estimation literature, then, canonical \acrshort{mano} joint rotations
+and interactive CPU-only operation from a single webcam are delivered by
+different systems, never by the same one.
+
+The present work reaches that point not by accelerating a learned regressor ---
+a direction no surveyed method currently supports at interactive rate on
+\acrshort{cpu} while emitting \acrshort{mano}-compatible rotations --- but by
+removing the learned component from the pose path entirely.
+It pairs model-free MediaPipe detection with the analytical AIK
+solver~\cite{meng2021aik}, which the inverse-kinematics survey singled out as the
+only one of four solver families that is simultaneously data-free, deterministic
+in per-frame cost, and runnable on
+\acrshort{cpu}~(\autoref{subsubsec:sota_ik_summary}).
+Because the 21-landmark input is fully observed, the landmark-to-rotation map is
+closed-form~(\autoref{subsec:aik}): the canonical pose follows from a single
+\acrshort{svd}-based point-set alignment and one swing-only traversal of the
+kinematic tree, with no convergence loop, no training-data dependency, and no
+\acrshort{gpu}.
+This is the combination the survey leaves open, and the one the remainder of the
+thesis implements.
+
+This is a trade rather than a free gain, and the survey was explicit about its
+price.
+Setting the twist of every finger joint to zero~(\autoref{subsec:aik}) discards
+the degree of freedom that a learned solver such as
+HybrIK-X~\cite{li2023hybrikx} is able to recover from image
+features~(\autoref{subsubsec:sota_ik_neural}), so the present system does not
+approach the reconstruction accuracy that defines the upper bound of that work.
+As~\autoref{subsubsec:sota_ik_summary} put it, HybrIK-X marks the accuracy
+ceiling this thesis does not reach, and AIK the latency and hardware floor within
+which it operates.
+What the choice buys is the operating point itself --- a per-frame cost bounded
+by construction and independent of pose complexity, initialisation, or hardware
+class --- and it is the occupation of that point, not any gain in accuracy, that
+distinguishes the system from the regressors
+of~\autoref{subsec:sota_estimation}.
+
+From that operating point follow two consequences that no surveyed system jointly
+demonstrates.
+The first is empirical: the assembled pipeline is not merely CPU-runnable in
+principle but responsive in practice, with a measured mean software latency of
+\SI{30.68}{\ms} over more than \num{20000} frames on a laptop \acrshort{cpu}, and
+no \acrshort{gpu} at any stage~(\autoref{subsec:contributions}) --- comfortably
+within the \SI{60}{\ms} perceptibility threshold
+of~\autoref{subsec:one_euro_filter}, and a level of responsiveness the
+model-based regressors attain only on a \acrshort{gpu}, where they report timing
+at all.
+The second is interactional: the recovered canonical pose is shown to be
+sufficient to drive four distinct
+applications~(\autoref{subsec:contributions}) --- a physics-based grappling
+interaction, a spring-physics face deformer, an editable city, and a 3D painting
+tool with point-cloud export.
+The last of these is the sharpest point of departure.
+The immersive creation tools it parallels ---
+CavePainting~\cite{keefe2001cavepainting} and its commercial successors ---
+deliver spatial drawing only behind a head-mounted display and a pair of
+controllers~(\autoref{subsubsec:sota_creative}), and the production
+hand-tracking systems that might replace those controllers still presuppose a
+dedicated peripheral or a head-mounted multi-camera
+rig~(\autoref{subsubsec:sota_immersive}).
+The present system offers the same core affordance --- depositing geometry in
+three dimensions by moving the hand --- from the single commodity webcam and
+CPU-only pipeline used throughout, removing the input apparatus every comparable
+system assumes.
+That conjunction --- a canonical \acrshort{mano} pose recovered at interactive
+rate on accessible hardware, and put to fine-grained interactive and creative use
+with no sensing apparatus beyond a webcam --- is what the present work
+contributes, and what no system surveyed in this chapter offers complete.
