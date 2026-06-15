@@ -30,7 +30,7 @@ class KinematicModel():
   Kinematic model that takes in model parameters and outputs mesh, keypoints, etc.
   '''
 
-  def __init__(self, model_path: str, armature: object, scale: int = 1):
+  def __init__(self, model_path: str, armature: object, scale: int = 1, apply_pose_blend_shapes: bool = False):
     '''
     Parameters
     ----------
@@ -40,6 +40,9 @@ class KinematicModel():
       An armature class from `armatures.py`.
     scale      : int, optional
       Scale of the model to make the solving easier, by default 1
+    
+    apply_pose_blend_shapes : bool, optional
+      Whether to apply pose blend shapes, by default False
     '''
 
     with open(model_path, 'rb') as f:
@@ -68,6 +71,8 @@ class KinematicModel():
 
     self.armature = armature
     self.n_joints = self.armature.n_joints
+
+    self.apply_pose_blend_shapes = apply_pose_blend_shapes
 
     self.pose  = np.zeros((self.n_joints, 3))
     self.shape = np.zeros(self.mesh_shape_basis.shape[-1])
@@ -158,8 +163,9 @@ class KinematicModel():
     # POSE BLEND SHAPES: Add pose-corrective term B_P(theta)
     # For each non-root joint, flatten (R_n - I) into a 135-element feature vector
     # and project through the learned basis to get per-vertex corrections.
-    pose_feature = (self.R[1:] - np.eye(3)).flatten()
-    verts       += self.mesh_pose_basis.dot(pose_feature)
+    if self.apply_pose_blend_shapes:
+      pose_feature = (self.R[1:] - np.eye(3)).flatten()
+      verts       += self.mesh_pose_basis.dot(pose_feature)
 
     # FORWARD KINEMATICS: Compute global transformation matrices for each joint
     G    = np.empty((self.n_joints, 4, 4))
