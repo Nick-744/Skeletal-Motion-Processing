@@ -66,7 +66,7 @@ sustained degradation was observed across the session.
 \begin{figure}[H]
     \centering
     \captionsetup{justification=centering}
-    \includegraphics[width=0.9\linewidth]{img/latency_histogram.pdf}
+    \includegraphics[width=1.0\linewidth]{img/latency_histogram.pdf}
     \caption{Distribution of software latency over \num{20234} frames.
             Vertical lines mark the mean, median, 95th and 99th
             percentiles. The dashed red line is the
@@ -77,8 +77,6 @@ sustained degradation was observed across the session.
 \end{figure}
 
 
-
-\newpage
 
 \subsection{Per-Stage Latency Decomposition}\label{subsec:latency_breakdown}
 
@@ -106,7 +104,7 @@ simultaneous hands, would be spent there and almost nowhere else.
 \begin{figure}[H]
     \centering
     \captionsetup{justification=centering}
-    \includegraphics[width=0.72\linewidth]{img/micro_benchmark_pie.pdf}
+    \includegraphics[width=1.0\linewidth]{img/micro_benchmark_pie.pdf}
     \caption{Share of per-frame pipeline compute by stage, measured over
             \num{5320} frames in a dedicated profiling run. The analytical
             inverse-kinematics solve accounts for \SI{89.7}{\percent} of compute,
@@ -148,7 +146,7 @@ commodity laptop, using no \acrshort{gpu} and leaving, on average, more than
 \begin{figure}[H]
     \centering
     \captionsetup{justification=centering}
-    \includegraphics[width=0.9\linewidth]{img/hardware_monitor_graph.pdf}
+    \includegraphics[width=1.0\linewidth]{img/hardware_monitor_graph.pdf}
     \caption{Processor and resident-memory usage of the streamer and the Unity
             application over a five-minute session (\num{300} one-second samples).
             Processor shares are expressed as a fraction of the machine's total
@@ -158,6 +156,8 @@ commodity laptop, using no \acrshort{gpu} and leaving, on average, more than
 \end{figure}
 
 
+
+\newpage
 
 \subsection{Discussion}\label{subsec:eval_discussion}
 
