@@ -117,21 +117,14 @@ even with that apparatus in hand it trades away the surface-supported precision
 of conventional drawing.
 
 This is the gap the creative application of the present system targets.
-The painting scene introduced in \autoref{subsec:contributions} offers the same
-core affordance these tools provide---depositing geometry in three dimensions by
-moving the hand, with point-cloud export---while removing the apparatus their
-interaction model assumes.
-No head-mounted display and no controllers are required.
-The hand is sensed by the same commodity webcam and \acrshort{cpu}-only pipeline
-used throughout this thesis, and the canonical \acrshort{mano} pose recovered
-upstream (\autoref{subsec:sota_estimation},~\autoref{subsec:sota_ik}) supplies
-the spatial input a controller would otherwise carry.
-
-The trade is the one this thesis makes throughout.
-The dedicated rigs of Tilt Brush and Gravity Sketch, and the headset systems
-that host them, achieve a spatial precision and a tracking volume that a single
-RGB camera cannot match; what the present system offers in their place
-is a creative three-dimensional interface carrying no adoption cost beyond
-hardware the user already owns.
-Where the immersive tools define the fidelity ceiling for spatial creation, the
-webcam painting tool defines its accessibility floor.
+The painting tool introduced in~\autoref{subsec:contributions} provides
+three-dimensional drawing with point-cloud export from the hand alone: no
+head-mounted display and no controllers, the hand sensed by the same commodity
+webcam and \acrshort{cpu}-only pipeline used throughout, and the canonical
+\acrshort{mano} pose recovered upstream
+(\autoref{subsec:sota_estimation},~\autoref{subsec:sota_ik}) supplying the
+spatial input a controller would otherwise carry.
+The dedicated rigs of Tilt Brush and Gravity Sketch achieve a spatial precision
+and tracking volume a single RGB camera cannot match; what the present tool
+offers in their place is a three-dimensional creative interface that costs the
+user no hardware beyond a webcam they already own.

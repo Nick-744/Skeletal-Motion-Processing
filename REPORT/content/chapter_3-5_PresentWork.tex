@@ -1,8 +1,7 @@
 \subsection{Positioning the Present Work}\label{subsec:sota_positioning}
 
 The four preceding subsections each judged a body of prior work against the
-three constraints of~\autoref{subsec:gap}: monocular RGB input, CPU-only
-real-time compute, and off-the-shelf hardware accessibility.
+three constraints of~\autoref{subsec:gap}.
 Taken individually, several of the surveyed systems satisfy one or two of those
 constraints.
 Taken together, what emerges is that no single prior system satisfies all three
@@ -17,22 +16,22 @@ and the demonstration that it suffices.
 The clearest tension runs through the estimation
 literature~(\autoref{subsec:sota_estimation}).
 The model-free detectors --- MediaPipe~\cite{zhang2020mediapipehands} and the
-weakly-supervised regressor of Spurr et al.~\cite{spurr2020weakly} --- run at
-interactive rate on commodity hardware, but emit only a flat set of joint
-positions: no rotations, no kinematic hierarchy, and no scale
+weakly-supervised regressor of Spurr et al.~\cite{spurr2020weakly} --- emit only
+joint coordinates, with no rotations, no kinematic hierarchy, and no scale
 invariance~(\autoref{subsubsec:model-free}), and so cannot on their own drive a
-rigged skeleton.
+rigged skeleton; MediaPipe further demonstrates that this class can run at
+interactive rate on commodity hardware.
 The model-based regressors --- Minimal-Hand~\cite{zhou2020monocular},
 HandOccNet~\cite{park2022handoccnet}, and HaMeR~\cite{pavlakos2024hamer} ---
 recover exactly the canonical \acrshort{mano} output that is missing, but reach
 it only on \acrshort{gpu}-class hardware where they report timing at all; two of
 the three report neither inference cost nor
 hardware~(\autoref{subsubsec:model-based}).
-MobRecon~\cite{chen2022mobrecon} is the one surveyed method to combine CPU-rate
-operation with accessible hardware, yet it does so by abandoning the parametric
-representation altogether: its directly predicted mesh vertices carry no joint
-rotations, and therefore cannot drive a skeleton without a separate
-pose-extraction stage~(\autoref{subsubsec:sota_hardware}).
+MobRecon~\cite{chen2022mobrecon} is the one surveyed mesh-recovery method to
+combine CPU-rate operation with accessible hardware, yet it does so by
+abandoning the parametric representation altogether: its directly predicted mesh
+vertices carry no joint rotations, and therefore cannot drive a skeleton without
+a separate pose-extraction stage~(\autoref{subsubsec:sota_hardware}).
 The parametric-model survey marks the same boundary from the other side ---
 \acrshort{mano} is adopted precisely because its lightweight forward pass meets
 the CPU constraint, where the anatomically richer NIMBLE~\cite{zhang2022nimble}
@@ -82,8 +81,7 @@ principle but responsive in practice, with a measured mean software latency of
 no \acrshort{gpu} at any stage~(\autoref{subsec:contributions}) --- comfortably
 within the \SI{60}{\ms} perceptibility threshold
 of~\autoref{subsec:one_euro_filter}, and a level of responsiveness the
-model-based regressors attain only on a \acrshort{gpu}, where they report timing
-at all.
+model-based regressors attain only on a \acrshort{gpu}.
 The second is interactional: the recovered canonical pose is shown to be
 sufficient to drive four distinct
 applications~(\autoref{subsec:contributions}) --- a physics-based grappling

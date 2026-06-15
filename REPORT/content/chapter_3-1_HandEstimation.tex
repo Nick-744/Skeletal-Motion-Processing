@@ -144,10 +144,10 @@ tracking on commodity CPU hardware but, as established
 in~\autoref{subsubsec:model-free}, its raw coordinate output lacks
 the canonical kinematic hierarchy.
 
-The system developed in this thesis addresses this gap directly.
-Rather than running a learned model-based regressor at CPU speed---a direction
-not currently supported at interactive rates by any published method that outputs
-\acrshort{mano}-compatible joint rotations---the pipeline pairs the model-free
-speed of MediaPipe with the AIK analytical solver, which maps detected landmarks
-to \acrshort{mano}-compatible joint rotations in closed form without any learned
-network in the pose-estimation path.
+Both MobRecon and MediaPipe thus reach interactive rate on accessible hardware
+only by forgoing the \acrshort{mano} joint rotations needed to drive a rigged
+skeleton.
+Closing that gap without a learned pose model is the route the present system
+takes; the solver families it draws on are surveyed in~\autoref{subsec:sota_ik},
+and its position relative to the literature is set out
+in~\autoref{subsec:sota_positioning}.
