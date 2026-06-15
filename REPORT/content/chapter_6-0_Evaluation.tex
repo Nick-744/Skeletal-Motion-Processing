@@ -1,0 +1,179 @@
+% Chapter 6 - Performance Evaluation
+
+\section{Performance Evaluation}\label{sec:evaluation}
+
+The central claim of this work is that webcam-only, \acrshort{cpu}-only hand
+tracking can drive interaction that feels immediate~(\autoref{subsec:sota_interaction}).
+Two properties must hold for that claim to stand. The recovered pose must reach
+the application quickly enough that the resulting motion is not perceived as
+lagging, and the cost of producing it must be modest enough that the whole system
+runs on commodity hardware without recourse to a \acrshort{gpu}. This chapter
+evaluates both: first the latency of the loop as the user experiences it, then
+where within the pipeline that latency is spent, and finally the processor and
+memory cost of running the streamer and the Unity application together.
+
+Three instruments are used, each described in turn. The receiver's per-frame
+timing log~(\autoref{subsec:receiver}) records software latency over a
+long session. A separate, more heavily instrumented profiling pass isolates the
+three compute stages of the streamer to show how the per-frame budget is divided
+between them. A process-level monitor samples the processor and memory footprint
+of both processes over a sustained run. Taken together they establish that the
+loop is fast, that its cost is concentrated almost entirely in a single stage, and
+that it leaves the host with substantial headroom.
+
+
+
+\subsection{Experimental Setup}\label{subsec:eval_setup}
+
+All measurements were collected on a laptop equipped with a 13th-generation
+Intel Core i5-1334U processor (\SI{1.30}{\GHz} base clock), with no
+\acrshort{gpu} involvement at any stage of the pipeline.
+
+The latency figures of~\autoref{subsec:latency_eval} were obtained from the
+logging mechanism built into the receiver~(\autoref{subsec:receiver}), which
+subtracts each datagram's send timestamp from the time of its consumption and
+appends the difference to a file. This measures latency as the application sees
+it: the full path from capture through detection, filtering, the analytical solve,
+serialisation, transport, and the Unity-side scheduling that precedes consumption.
+The per-stage decomposition of~\autoref{subsec:latency_breakdown} comes instead
+from a dedicated profiling run of the streamer in which high-resolution timers
+bracket the detection, filtering, and solve stages individually; it isolates
+compute alone and excludes transport and the Unity side. Because these are two
+separate sessions capturing different interaction, their absolute totals are not
+directly comparable.
+The resource figures of~\autoref{subsec:hardware_util} were recorded by a
+process-level monitor that sampled the processor share and resident memory of the
+streamer and the Unity process once per second over a five-minute session,
+reporting each processor share as a fraction of the machine's total capacity.
+
+
+
+\subsection{Software Latency}\label{subsec:latency_eval}
+
+The logging mechanism was enabled over a continuous 13-minute session to collect
+a representative sample of per-frame software latency. Over \num{20234} frames the
+pipeline achieved a mean latency of \SI{30.68}{\ms}, with a median of
+\SI{31.00}{\ms} and a standard deviation of \SI{5.03}{\ms}; the 95th and 99th
+percentiles were \SI{37.00}{\ms} and \SI{40.00}{\ms} respectively.
+
+All but the rarest frames therefore fall well below the \SI{60}{\ms}
+perceptibility threshold identified in~\autoref{subsec:one_euro_filter}, above
+which lag becomes noticeable to users. The maximum observed value of
+\SI{428}{\ms} represents an isolated outlier consistent with an OS-level
+scheduling interruption or a garbage-collection pause on the Unity side; no
+sustained degradation was observed across the session.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{justification=centering}
+    \includegraphics[width=0.9\linewidth]{img/latency_histogram.pdf}
+    \caption{Distribution of software latency over \num{20234} frames.
+            Vertical lines mark the mean, median, 95th and 99th
+            percentiles. The dashed red line is the
+            \SI{60}{\ms} perceptibility threshold~(\autoref{subsec:one_euro_filter}).
+            Four outlier frames exceeding \SI{70}{\ms} are omitted from the
+            display (maximum observed: \SI{428}{\ms}).}
+    \label{fig:latency-hist}
+\end{figure}
+
+
+
+\newpage
+
+\subsection{Per-Stage Latency Decomposition}\label{subsec:latency_breakdown}
+
+Knowing that the loop is fast leaves open the question of where its time is spent,
+which is the more useful thing to know if it is ever to be made faster. To answer
+it, a profiling run instrumented the streamer's three compute stages
+independently: the MediaPipe detection of the hand
+landmarks~(\autoref{subsec:hand_tracking}), the filtering and three-dimensional
+anchoring that follow it~(\autoref{subsec:one_euro_filter}), and the analytical
+inverse-kinematics solve that recovers the \acrshort{mano}
+pose~(\autoref{subsec:ik_impl}). Over \num{5320} frames the division is stark. The
+solve dominates at \SI{89.7}{\percent} of per-frame compute;
+detection accounts for \SI{8.1}{\percent} and the filtering and anchoring
+stage for only \SI{1.9}{\percent},
+with the remaining \SI{0.3}{\percent} attributable to the per-hand bookkeeping
+around the solve. The breakdown is shown in~\autoref{fig:latency-pie}.
+
+The practical reading is that the analytical solver is the one component whose
+cost matters. Detection and filtering are, by comparison, almost free, which
+vindicates the decision to keep the MediaPipe front end and the 1€ filter
+deliberately light and to concentrate the pipeline's analytical work in the
+pose-recovery stage. Any future effort to reduce latency, or to support more
+simultaneous hands, would be spent there and almost nowhere else.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{justification=centering}
+    \includegraphics[width=0.72\linewidth]{img/micro_benchmark_pie.pdf}
+    \caption{Share of per-frame pipeline compute by stage, measured over
+            \num{5320} frames in a dedicated profiling run. The analytical
+            inverse-kinematics solve accounts for \SI{89.7}{\percent} of compute,
+            MediaPipe detection for \SI{8.1}{\percent}, filtering and anchoring for
+            \SI{1.9}{\percent}, and per-hand overhead for the remaining
+            \SI{0.3}{\percent}.}
+    \label{fig:latency-pie}
+\end{figure}
+
+
+
+\subsection{Hardware Resource Utilisation}\label{subsec:hardware_util}
+
+Latency establishes that the loop is fast; the resource cost establishes that it
+is cheap. A process-level monitor recorded the processor share and resident memory
+of both the streamer and the Unity application once per second over a five-minute
+session (\num{300} samples), with each processor share expressed as a fraction of
+the machine's total capacity.
+
+The streamer, which carries the entire vision and kinematics pipeline, averaged
+\SI{17.5}{\percent} of total processor capacity (95th percentile \SI{19.2}{\percent},
+peak \SI{21.1}{\percent}). The Unity application averaged \SI{14.6}{\percent} (95th percentile
+\SI{16.9}{\percent}, peak \SI{18.6}{\percent}). Together the two processes account
+for roughly a third of the machine's capacity; the system as a whole averaged
+\SI{57.7}{\percent} (95th percentile \SI{73.9}{\percent}, peak \SI{85.8}{\percent}),
+the balance being operating-system and background activity, including the monitor
+and the camera stack themselves. Memory was modest and, more importantly, flat:
+the streamer held a mean resident set of \num{495}\,MB and the Unity process
+\num{481}\,MB, neither growing materially across the session. The absence of drift
+is the expected consequence of the fire-and-forget design, in which only the
+newest datagram is ever retained~(\autoref{subsec:receiver},~\autoref{subsec:udp})
+and no per-frame state accumulates. \autoref{fig:hardware-monitor} plots both
+quantities over the session.
+
+The complete two-process system therefore runs comfortably inside the budget of a
+commodity laptop, using no \acrshort{gpu} and leaving, on average, more than
+\SI{40}{\percent} of the processor idle.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{justification=centering}
+    \includegraphics[width=0.9\linewidth]{img/hardware_monitor_graph.pdf}
+    \caption{Processor and resident-memory usage of the streamer and the Unity
+            application over a five-minute session (\num{300} one-second samples).
+            Processor shares are expressed as a fraction of the machine's total
+            capacity. Both processes hold a stable memory footprint across the
+            session.}
+    \label{fig:hardware-monitor}
+\end{figure}
+
+
+
+\subsection{Discussion}\label{subsec:eval_discussion}
+
+The three measurements converge on a single conclusion. The loop's latency sits
+below the threshold at which lag becomes perceptible, so the recovered hands move
+with the user rather than visibly behind them; that latency is overwhelmingly the
+cost of one stage, the analytical solve, which makes the system's behaviour easy
+to reason about and gives any future optimisation a single clear target; and the
+whole runs within a fraction of a commodity processor's capacity, with stable
+memory and no \acrshort{gpu}.
+
+This is the quantitative form of the argument the application chapter made
+qualitatively~(\autoref{subsec:application_summary}). The interactions of the four
+scenes --- of a kind that comparable systems deliver only through a head-mounted
+display, a controller, or a dedicated peripheral~(\autoref{subsec:sota_interaction})
+--- are produced here from a single webcam, on a processor that is left more than
+\SI{40}{\percent} idle while doing so. The loop is not merely closed but fast and
+cheap, and it is that combination, rather than either property alone, that makes
+the accessibility claim of this thesis a measured result rather than an aspiration.
