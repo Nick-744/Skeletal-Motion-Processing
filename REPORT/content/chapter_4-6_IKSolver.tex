@@ -12,7 +12,7 @@ solve itself.
 The MediaPipe and \acrshort{mano} skeletons number their joints differently, as
 shown in \autoref{fig:mediapipe-joints} and \autoref{fig:mano-joints}. The
 \texttt{MANOArmature} class holds the data structures that bridge them. It
-describes a skeleton of 16 movable joints and 21 keypoints. A parent table,
+describes the wrist plus the 15 finger joints and 21 keypoints. A parent table,
 \texttt{snap\_parent}, gives the parent of each of the 21 keypoints in MediaPipe
 ordering, encoding the topology in which the wrist is the root and the five
 finger bases attach directly to it, with each finger continuing as a chain. A
