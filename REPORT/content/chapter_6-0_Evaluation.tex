@@ -1,14 +1,20 @@
-% Chapter 6 - Performance Evaluation
+% Chapter 6 - The Resulting System and Its Evaluation
 
-\section{Performance Evaluation}\label{sec:evaluation}
+\section{The Resulting System and Its Evaluation}\label{sec:evaluation}
 
-The central claim of this work is that webcam-only, \acrshort{cpu}-only hand
-tracking can drive interaction that feels immediate~(\autoref{subsec:sota_interaction}).
+This chapter draws the work together and puts it to the test. Across the previous
+two chapters the system was built in parts; in use, those parts are one running
+product, and it is that product, not the parts, which the thesis set out to
+deliver. This chapter therefore presents the resulting system as a single whole
+before measuring anything of it, and then measures it against the claim on which
+everything rests~(\autoref{subsec:sota_interaction}): that webcam-only,
+\acrshort{cpu}-only hand tracking can drive interaction which feels immediate.
+
 Two properties must hold for that claim to stand. The recovered pose must reach
 the application quickly enough that the resulting motion is not perceived as
 lagging, and the cost of producing it must be modest enough that the whole system
-runs on commodity hardware without recourse to a \acrshort{gpu}. This chapter
-evaluates both: first the latency of the loop as the user experiences it, then
+runs on commodity hardware without recourse to a \acrshort{gpu}. The evaluation
+tests both --- first the latency of the loop as the user experiences it, then
 where within the pipeline that latency is spent, and finally the processor and
 memory cost of running the streamer and the Unity application together.
 
@@ -20,6 +26,64 @@ between them. A process-level monitor samples the processor and memory footprint
 of both processes over a sustained run. Taken together they establish that the
 loop is fast, that its cost is concentrated almost entirely in a single stage, and
 that it leaves the host with substantial headroom.
+
+
+
+\subsection{The Resulting System}\label{subsec:resulting_system}
+
+Before turning to those measurements, it is worth stating plainly what it is
+they characterise. The two preceding chapters each described one half of a single
+artefact --- the Python pipeline that turns a frame into a streamed
+pose~(\autoref{sec:pipeline}), and the Unity application that turns that stream
+into interaction~(\autoref{sec:application}). Run together, the two processes form
+one system: a real-time, monocular, \acrshort{cpu}-only hand-tracking and
+interaction application, in which a person seated at an ordinary laptop reaches
+into a three-dimensional scene with their bare hands and is understood.
+
+In operation it is a single closed loop with the user inside it. The webcam sees
+the hands, and two \acrshort{mano} hand avatars appear on screen, posed and placed
+to mirror the real hands and tracking every movement of the fingers continuously
+thereafter~(\autoref{fig:unity-hands}). From that point the user touches no
+controller, wears no headset, and pulls on no glove. A fixed vocabulary of five
+gestures~(\autoref{subsec:interaction_layer}) carries every command the system
+accepts, each reused from scene to scene in a familiar role: the thumb gestures
+move between scenes, wave the companion bear's arm, and step through an undo
+history; a closed fist grips a grappling rope in one scene and steers a flying
+camera in another; a raised index finger paints; and a menu worn on the wrist ---
+summoned by a gesture, turned by the wrist itself, and chosen from by a
+gesture~(\autoref{fig:bracelet-menu}) --- selects between modes with no pointer or
+on-screen control ever appearing. The hands are at once the controller and,
+whenever they take command of an avatar, the thing controlled.
+
+Beneath the interaction lies one unbroken data path, realised end to end. A colour
+frame is reduced to 21 landmarks by MediaPipe~(\autoref{subsec:hand_tracking}),
+smoothed and anchored in space~(\autoref{subsec:landmark_smoothing}), and resolved
+in closed form into a canonical \acrshort{mano} pose~(\autoref{subsec:ik_impl});
+that pose, a gesture label, and a placement anchor are serialised as a
+\acrshort{json} datagram and sent over \acrshort{udp}~(\autoref{subsec:streaming});
+and the receiver reverses each of those steps to drive the on-screen skeleton that
+every scene reads from~(\autoref{subsec:receiver}). Each link in that chain was set
+out and justified on its own in the earlier chapters; the delivered system is the
+chain itself, carrying a hand from in front of the camera to inside the scene,
+frame after frame, with nothing along the path that a commodity processor cannot
+sustain.
+
+What makes this a system rather than a demonstration is that the one loop serves
+four genuinely different applications without alteration. The companion-and-grappling
+bear, the deformable face, the editable city, and the painting tool are all built
+on the one shared interaction layer --- the same posed skeleton, the same gesture
+vocabulary, and the same menu and pointing components~(\autoref{subsec:interaction_layer})
+--- yet put the recovered pose to incompatible uses: piloting a physics-driven
+avatar, dragging individual mesh vertices, repositioning whole buildings, and
+laying down strokes that leave the application as point clouds for surface
+reconstruction~(\autoref{subsec:nksr}). A drawing made in the painting tool can
+even be carried across into the city and set down by hand as raw
+points~(\autoref{subsubsec:scene_city_pcd}), so the scenes are not sealed off from
+one another but share a common currency of hand-made geometry. The deliverable, in
+short, is a self-contained interactive environment, navigated and operated from end
+to end by hand, that asks of its user only the camera already built into a laptop.
+It is this system, running as a whole, whose responsiveness and cost the remainder
+of the chapter sets out to measure.
 
 
 
