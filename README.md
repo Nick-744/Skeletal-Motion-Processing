@@ -36,3 +36,9 @@ conda activate skeletal_game_env
 ```bash
 pip install opencv-python==4.13.0.92 mediapipe==0.10.35 numpy==2.4.2 matplotlib==3.10.8 transforms3d==0.4.2 open3d==0.19.0
 ```
+
+Once the environment is ready, the main Python script to run in it is
+[`SOURCE_CODE/mano_unity_streamer.py`](./SOURCE_CODE/mano_unity_streamer.py).
+
+The accompanying Unity application is located at [`SOURCE_CODE/my_hands_game`](./SOURCE_CODE/my_hands_game)
+and was built with Unity 6000.3.11f1.
