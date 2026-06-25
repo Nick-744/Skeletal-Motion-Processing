@@ -4,6 +4,9 @@
 
 ![Screenshots Collage](screenshots-collage.png)
 
+### Watch the Presentation
+[![Thesis Presentation](https://img.shields.io/badge/YouTube-Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/T5l_-FreMbY)
+
 ## Instructions to Run
 
 Steps to set up the environment and install the required dependencies:
