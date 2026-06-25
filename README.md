@@ -1,5 +1,9 @@
 # Processing and encoding of skeletal motion models for data normalization and analysis
 
+## Screenshots
+
+![Screenshots Collage](screenshots-collage.png)
+
 ## Instructions to Run
 
 Steps to set up the environment and install the required dependencies:
